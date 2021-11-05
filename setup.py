@@ -10,5 +10,5 @@ setup(
     author_email='m.schlemminger@isfh.de',
     description='',
     install_requires=['gooey', 'matplotlib', 'numpy', 'pandas', 'scipy'],
-    python_requires='==3.9'
+    python_requires='>=3.9'
 )

@@ -16,7 +16,7 @@ Create a new conda environment:
 Activate the environment:
 ```conda activate optiklabor```
 
-Install the package with all requirements:
+Within your anaconda prompt, navigate to your Optiklabor-folder and install the package with all requirements:
 ```pip install .```
 
 
