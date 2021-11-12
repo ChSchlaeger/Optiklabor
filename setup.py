@@ -9,6 +9,7 @@ setup(
     author='M.Schlemminger',
     author_email='m.schlemminger@isfh.de',
     description='',
-    install_requires=['gooey', 'matplotlib', 'numpy', 'pandas', 'scipy'],
+    install_requires=['gooey>=1.0', 'matplotlib>=3.4', 'numpy>=1.21',
+                      'pandas>=1.3', 'scipy>=1.7'],
     python_requires='>=3.9'
 )
