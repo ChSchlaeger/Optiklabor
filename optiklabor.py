@@ -299,8 +299,8 @@ class Optiklabor:
         ax.set_zlabel(zlabel)
         ax.view_init(elev=30, azim=-30)
         plt.colorbar(im, location='left', shrink=0.6, pad=0.03)
+        plt.show()
         plt.savefig(self.output_dir / strfile, dpi=300)
-        plt.close()
 
 
 class IntermediateData:
