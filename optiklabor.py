@@ -80,7 +80,7 @@ def get_command_line_arguments():
         '-c', '--correction_factor', dest='correction_factor',
         metavar='Correction factor', widget='Dropdown',
         choices=['No correction', '1/cos(entrance angle)', '1/cos(exit angle)'],
-        default='No correction'
+        default='No correction', required=True
     )
     separate.add_argument(
         '-p', '--plot-angle', dest='plot_angle',
@@ -412,8 +412,8 @@ class IntermediateData:
         -------
 
         """
-        if self.correction_factor == '1':
-            return 1
+        if self.correction_factor == 'No correction':
+            self.correction_angle = 1
         alpha = radians(float(meta_data['SampleTilt']) * -1)
         beta = radians(float(meta_data['SampleAngle']))
         gamma = radians(float(meta_data['SampleRotation']))
