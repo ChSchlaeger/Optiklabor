@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from gooey import Gooey, GooeyParser
-from scipy.integrate import trapezoid
 
 
 def main():
@@ -182,7 +181,7 @@ class Optiklabor:
                 intermediate_data, angle_data, meta_data, self.filter_dir)
             output_data = pd.concat([output_data, new_output], axis=1)
         self.output_data = output_data.sort_index(axis=1)
-        self.integrate_output_data()
+        self.sum_output_data()
         self.write_output_data()
         self.plot_output_data()
 
@@ -203,16 +202,14 @@ class Optiklabor:
         else:
             self.ref_data = pd.DataFrame()
 
-    def integrate_output_data(self):
-        """Integrates the output data over all wavelengths.
+    def sum_output_data(self):
+        """Sums the output data over all wavelengths.
 
         Returns
         -------
 
         """
-        output_data = self.output_data.apply(
-            lambda y: trapezoid(y, self.output_data.index))
-        self.output_data = output_data.unstack('Parameter')
+        self.output_data = self.output_data.sum().unstack('Parameter')
 
     def write_output_data(self):
         """Writes the output data to a csv file. Converts angles from radians
@@ -613,6 +610,7 @@ class OutputData:
         weights.index = intermediate_data.index
         weights.columns = self.filter_data.index
         weights = weights @ self.filter_data['weight']
+        weights = weights / weights.sum()
         output_data = intermediate_data.mul(weights, axis=0)
         return output_data
 
