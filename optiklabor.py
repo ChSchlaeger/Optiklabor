@@ -254,17 +254,35 @@ class Optiklabor:
         phi = reflection[azimuth]
         rho = reflection[param]
         rho[rho < 0] = 0
+        # replace thetas larger than 180° with 180° - theta
+        theta[theta > np.pi] -= np.pi
         # from spherical to cartesian coordinates
-        x = rho * np.cos(phi) * np.sin(theta)
-        y = rho * np.sin(phi) * np.sin(theta)
-        z = rho * np.cos(theta)
+        x = theta * np.cos(phi)
+        y = theta * np.sin(phi)
+        z = rho
         xlabel = 'x'
         ylabel = 'y'
-        zlabel = 'Reflection'
+        ax = self.plot_3d_surface(x, y, z, xlabel=xlabel, ylabel=ylabel)
+        # plot concentric circles
+        phi_coord = np.linspace(0, 2 * np.pi, 50)
+        theta_coord = [radians(deg) for deg in np.arange(15, 91, 15)]
+        z = np.zeros(50)
+        for theta in theta_coord:
+            x = theta * np.cos(phi_coord)
+            y = theta * np.sin(phi_coord)
+            ax.plot(x, y, z, color='grey', linewidth=1)
+        # plot lines through circle
+        for phi in [radians(deg) for deg in np.arange(0, 181, 15)]:
+            x1 = np.pi / 2 * np.cos(phi)
+            y1 = np.pi / 2 * np.sin(phi)
+            x2 = np.pi / 2 * np.cos(phi - np.pi)
+            y2 = np.pi / 2 * np.sin(phi - np.pi)
+            ax.plot([x1, x2], [y1, y2], [0, 0], color='grey', linewidth=1)
         strfile = f'polar_{self.plot_angle}.png'
-        self.plot_3d(x, y, z, xlabel, ylabel, zlabel, strfile)
+        plt.savefig(self.output_dir / strfile, dpi=300)
 
-    def plot_3d(self, x, y, z, xlabel, ylabel, zlabel, strfile):
+    def plot_3d_surface(self, x, y, z, xlabel=None, ylabel=None, zlabel=None,
+                        strfile=None):
         """Plots a 3D surface.
 
         Parameters
@@ -294,10 +312,17 @@ class Optiklabor:
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
         ax.set_zlabel(zlabel)
-        ax.view_init(elev=30, azim=-30)
-        plt.colorbar(im, location='left', shrink=0.6, pad=0.03)
+        ax.view_init(elev=30, azim=60)
+        ax.tick_params(axis='x', which='major', pad=1)
+        ax.tick_params(axis='y', which='major', pad=1)
+        ax.tick_params(axis='z', which='major', pad=8)
+        ax.grid(False)
+        plt.colorbar(im, location='left', shrink=0.6, pad=0.1)
         plt.show()
-        plt.savefig(self.output_dir / strfile, dpi=300)
+        if strfile:
+            plt.savefig(self.output_dir / strfile, dpi=300)
+        else:
+            return ax
 
 
 class IntermediateData:
