@@ -316,6 +316,7 @@ class Optiklabor:
         ax.tick_params(axis='x', which='major', pad=1)
         ax.tick_params(axis='y', which='major', pad=1)
         ax.tick_params(axis='z', which='major', pad=8)
+        ax.set_zlim(bottom=0)
         ax.grid(False)
         plt.colorbar(im, location='left', shrink=0.6, pad=0.1)
         plt.show()
