@@ -280,6 +280,7 @@ class Optiklabor:
             ax.plot([x1, x2], [y1, y2], [0, 0], color='grey', linewidth=1)
         strfile = f'polar_{self.plot_angle}.png'
         plt.savefig(self.output_dir / strfile, dpi=300)
+        plt.show()
 
     def plot_3d_surface(self, x, y, z, xlabel=None, ylabel=None, zlabel=None,
                         strfile=None):
@@ -319,7 +320,6 @@ class Optiklabor:
         ax.set_zlim(bottom=0)
         ax.grid(False)
         plt.colorbar(im, location='left', shrink=0.6, pad=0.1)
-        plt.show()
         if strfile:
             plt.savefig(self.output_dir / strfile, dpi=300)
         else:
