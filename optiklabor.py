@@ -1,4 +1,4 @@
-from math import acos, cos, degrees, radians, sin, sqrt
+from math import acos, cos, degrees, radians, sin, sqrt, isnan
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -435,6 +435,7 @@ class IntermediateData:
         -------
 
         """
+        
         if self.correction_factor == 'No correction':
             self.correction_angle = 1
         alpha = radians(float(meta_data['SampleTilt']) * -1)
@@ -452,18 +453,38 @@ class IntermediateData:
             self.correction_angle = 1
             self.correction_factor = 'No correction'
         # azimuths
-        cos_azi_exit = ((cos(beta - delta) * sin(alpha) * sin(gamma)
-                         - sin(beta - delta) * cos(gamma))
-                        / sqrt(1 - cos(alpha) ** 2 * cos(beta - delta) ** 2))
-        self.azi_exit = acos(cos_azi_exit)
+        if self.ang_exit < 1e-12:
+            self.azi_exit = 0
+        else:
+            cos_azi_exit = ((cos(beta - delta) * sin(alpha) * sin(gamma)
+                             - sin(beta - delta) * cos(gamma))
+                            / sqrt(1 - cos(alpha) ** 2 * cos(beta - delta) ** 2))
+            
+            if cos_azi_exit < -1:
+                self.azi_exit = np.pi
+            elif cos_azi_exit > 1:
+                self.azi_exit = 0
+            else:
+                self.azi_exit = acos(cos_azi_exit)
+        
         condition_exit = (sin(gamma) * sin(beta - delta)
                           + sin(alpha) * cos(gamma) * cos(beta - delta))
         if condition_exit < 0:
             self.azi_exit = radians(360) - self.azi_exit
-        cos_azi_entrance = ((-sin(beta) * cos(gamma) + sin(alpha) * cos(beta)
-                             * sin(gamma))
-                            / sqrt(1 - cos(alpha) ** 2 * cos(beta) ** 2))
-        self.azi_entrance = acos(cos_azi_entrance)
+        if self.ang_entrance < 1e-12:
+            self.azi_entrance = 0
+        else:
+            cos_azi_entrance = ((-sin(beta) * cos(gamma) + sin(alpha) * cos(beta)
+                                 * sin(gamma))
+                                / sqrt(1 - cos(alpha) ** 2 * cos(beta) ** 2))
+            
+            if cos_azi_entrance < -1:
+                self.azi_entrance = np.pi
+            elif cos_azi_entrance > 1:
+                self.azi_entrance = 0
+            else:
+                self.azi_entrance = acos(cos_azi_entrance)
+        
         condition_entrance = (sin(gamma) * sin(beta)
                               + sin(alpha) * cos(gamma) * cos(beta))
         if condition_entrance < 0:
