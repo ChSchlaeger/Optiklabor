@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 from gooey import Gooey, GooeyParser
 
+#If calibration with spectralon:
+  #  BRDF values have to be multiplied with cos(45°)=1/sqrt(2) afterward.
 
 def main():
     """The main method that runs the program.
@@ -48,7 +50,7 @@ def get_command_line_arguments():
     """
     parser = GooeyParser()
     subs = parser.add_subparsers(dest='command')
-    # tab with seperate folders
+    # tab with seperate folders 
     separate = subs.add_parser(
         'separate', prog='Folders',
         help='Choose separate folders for the different files'
@@ -437,7 +439,7 @@ class IntermediateData:
         """
         
         if self.correction_factor == 'No correction':
-            self.correction_angle = 1
+            self.correction_angle = 0 #change from 1 to zero 
         alpha = radians(float(meta_data['SampleTilt']) * -1)
         beta = radians(float(meta_data['SampleAngle']))
         gamma = radians(float(meta_data['SampleRotation']))
@@ -450,7 +452,7 @@ class IntermediateData:
         elif self.correction_factor == '1/cos(exit angle)':
             self.correction_angle = self.ang_exit
         if self.correction_angle < 1e-12:
-            self.correction_angle = 1
+            self.correction_angle = 0 #change from 1 to zero 
             self.correction_factor = 'No correction'
         # azimuths
         if self.ang_exit < 1e-12:
@@ -523,7 +525,7 @@ class IntermediateData:
                 method='linear')
             ref_data = ref_data.reindex(spectral_data.index)
             intermediate_data = ref_data.mul(spectral_data, axis=0)
-        intermediate_data /= self.correction_angle
+        intermediate_data /= cos(self.correction_angle) #Hier hatte ursprünglich der cos gefehlt (wurde nachgetragen). 
         if save_intermediate:
             with open(output_file, 'w') as f:
                 # write angle data
