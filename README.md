@@ -22,3 +22,15 @@ Within your Anaconda Prompt, navigate to your Optiklabor-folder and install the 
 
 Run the executable script by:
 ```python optiklabor.py```
+
+-----
+
+## Explanation by Jan:
+
+before the BRDF measurements:
+- measurement_table: create angles for the goniophotometer
+
+after the measurements:
+- optiklabor_loop_and_correction: get BRDF files for a list of wavelengths, for every wavelength one file
+- brdf_plot: plots
+- am-1-5_BRDF_korrigiert: average by using AM1.5 spectrum. and compute reflectance
