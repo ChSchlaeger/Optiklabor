@@ -1,4 +1,4 @@
-from math import acos, cos, degrees, radians, sin, sqrt, isnan
+from math import acos, cos, degrees, radians, sin, sqrt
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -6,16 +6,17 @@ import numpy as np
 import pandas as pd
 from gooey import Gooey, GooeyParser
 
-#If calibration with spectralon:
-  #  BRDF values have to be multiplied with cos(45°)=1/sqrt(2) afterward.
+# If calibration with spectralon:
+#   BRDF values have to be multiplied with cos(45°)=1/sqrt(2) afterward.
+
 
 def main():
     """The main method that runs the program.
     """
-    (spectral_dir, reference_dir, filter_dir, output_dir, save_intermediate,
+    (spectral_dir, reference_file, filter_file, output_dir, save_intermediate,
      correction_factor, plot_angle) = get_command_line_arguments()
     optiklabor = Optiklabor(
-        spectral_dir, reference_dir, filter_dir, output_dir, save_intermediate,
+        spectral_dir, reference_file, filter_file, output_dir, save_intermediate,
         correction_factor, plot_angle
     )
     optiklabor.build()
@@ -38,7 +39,8 @@ def get_command_line_arguments():
     filter : pathlib.Path
         The path to the filter file
     output : pathlib.Path
-        The folder where the output files will be stored
+        The folder where the output files will be stored. By default, the
+        output files are stored in a new subfolder inside the spectral folder.
     intermediate : bool
         Determines if the intermediate files are stored to the disk
     correction_factor : str
@@ -50,7 +52,7 @@ def get_command_line_arguments():
     """
     parser = GooeyParser()
     subs = parser.add_subparsers(dest='command')
-    # tab with seperate folders 
+    # tab with separate folders
     separate = subs.add_parser(
         'separate', prog='Folders',
         help='Choose separate folders for the different files'
@@ -62,11 +64,13 @@ def get_command_line_arguments():
     )
     separate.add_argument(
         '-o', '--output', dest='output_dir',
-        help='Save the output files to this folder', widget='DirChooser'
+        help='Save the output files to this folder (optional)',
+        widget='DirChooser'
     )
     separate.add_argument(
         '-r', '--reference_data', dest='reference_file',
-        help='File containing the reference data', widget='FileChooser'
+        help='File containing the reference data (optional)',
+        widget='FileChooser'
     )
     separate.add_argument(
         '-f', '--filter', dest='filter_file',
@@ -91,22 +95,23 @@ def get_command_line_arguments():
     )
     # post tabs
     args = parser.parse_args()
-    spectral = Path(args.spectral_dir)
-    reference = args.reference_file
-    if reference:
-        reference = Path(args.reference_file)
-    output = args.output_dir
-    if output:
-        output = Path(output)
+    spectral_dir = Path(args.spectral_dir)
+    reference_file = args.reference_file
+    if reference_file:
+        reference_file = Path(args.reference_file)
+    output_dir = args.output_dir
+    if output_dir:
+        output_dir = Path(output_dir)
     else:
-        output = spectral / 'Output'
-        output.mkdir(exist_ok=True)
-    filter = Path(args.filter_file)
-    intermediate = args.save_intermediate
+        output_dir = spectral_dir / 'Output'
+        output_dir.mkdir(exist_ok=True)
+    filter_file = Path(args.filter_file)
+    save_intermediate = args.save_intermediate
     correction_factor = args.correction_factor
     plot_angle = args.plot_angle
-    return (spectral, reference, filter, output, intermediate,
-            correction_factor, plot_angle)
+
+    return (spectral_dir, reference_file, filter_file, output_dir,
+            save_intermediate, correction_factor, plot_angle)
 
 
 def in_ranges(x, b):
@@ -117,7 +122,8 @@ def in_ranges(x, b):
     Parameters
     ----------
     x : pd.Series
-    b : list of tuples in the form [(lb, ub)]
+    b : list of tuple
+        in the form [(lb, ub)]
 
     Returns
     -------
@@ -189,7 +195,7 @@ class Optiklabor:
 
     def read_reference_data(self):
         """Reads the reference data if a reference directory is given. Returns
-        an empty DataFrame if not
+        an empty DataFrame if not.
 
         Returns
         -------
@@ -228,6 +234,7 @@ class Optiklabor:
                 'ExitAngle']
         for col in cols:
             output_data[col] = output_data[col].apply(degrees)
+        self.output_dir.mkdir(exist_ok=True)
         output_file = self.output_dir / 'output.txt'
         with open(output_file, 'w') as f:
             f.write(f'#CorrectionFactor={self.correction_factor}\n')
@@ -280,12 +287,12 @@ class Optiklabor:
             x2 = np.pi / 2 * np.cos(phi - np.pi)
             y2 = np.pi / 2 * np.sin(phi - np.pi)
             ax.plot([x1, x2], [y1, y2], [0, 0], color='grey', linewidth=1)
-        strfile = f'polar_{self.plot_angle}.png'
-        plt.savefig(self.output_dir / strfile, dpi=300)
+        save_name = f'polar_{self.plot_angle}.png'
+        plt.savefig(self.output_dir / save_name, dpi=300)
         plt.show()
 
     def plot_3d_surface(self, x, y, z, xlabel=None, ylabel=None, zlabel=None,
-                        strfile=None):
+                        save_name=None):
         """Plots a 3D surface.
 
         Parameters
@@ -302,7 +309,7 @@ class Optiklabor:
             The y label
         zlabel : str
             The z label
-        strfile : str
+        save_name : str
             The filename
 
         Returns
@@ -322,8 +329,8 @@ class Optiklabor:
         ax.set_zlim(bottom=0)
         ax.grid(False)
         plt.colorbar(im, location='left', shrink=0.6, pad=0.1)
-        if strfile:
-            plt.savefig(self.output_dir / strfile, dpi=300)
+        if save_name:
+            plt.savefig(self.output_dir / save_name, dpi=300)
         else:
             return ax
 
@@ -352,7 +359,8 @@ class IntermediateData:
     @classmethod
     def build(cls, spectral_file, ref_data, correction_factor, output_dir,
               save_intermediate):
-        """Classmethod that builds an IntermediateData object from spectral data
+        """
+        Classmethod that builds an IntermediateData object from spectral data
         and returns the relevant data
 
         Parameters
@@ -375,7 +383,7 @@ class IntermediateData:
         angle_data : dict
             The exit and entrance angles and their azimuths
         meta_data : dict
-            The meta data of the measurements given by the spectral file
+            The metadata of the measurements given by the spectral file
 
         """
         intermediate = cls(correction_factor)
@@ -390,7 +398,8 @@ class IntermediateData:
         )
         return intermediate_data, intermediate.angle_data, meta_data
 
-    def read_spectral_data(self, spectral_file):
+    @staticmethod
+    def read_spectral_data(spectral_file):
         """Reads the spectral data
 
         Parameters
@@ -403,7 +412,7 @@ class IntermediateData:
         spectral_data : pd.Series
             The spectral data
         meta_data : dict
-            The meta data of the measurements given by the spectral file
+            The metadata of the measurements given by the spectral file
 
         """
         # get actual data
@@ -426,12 +435,12 @@ class IntermediateData:
 
     def get_angles(self, meta_data):
         """Calculates the entrance and exit angle and their azimuths from the
-        meta data given by the spectral data
+        metadata given by the spectral data
 
         Parameters
         ----------
         meta_data : dict
-            The meta data of the measurements given by the spectral file
+            The metadata of the measurements given by the spectral file
 
         Returns
         -------
@@ -439,7 +448,7 @@ class IntermediateData:
         """
         
         if self.correction_factor == 'No correction':
-            self.correction_angle = 0 #change from 1 to zero 
+            self.correction_angle = 0  # change from 1 to zero
         alpha = radians(float(meta_data['SampleTilt']) * -1)
         beta = radians(float(meta_data['SampleAngle']))
         gamma = radians(float(meta_data['SampleRotation']))
@@ -452,7 +461,7 @@ class IntermediateData:
         elif self.correction_factor == '1/cos(exit angle)':
             self.correction_angle = self.ang_exit
         if self.correction_angle < 1e-12:
-            self.correction_angle = 0 #change from 1 to zero 
+            self.correction_angle = 0  # change from 1 to zero
             self.correction_factor = 'No correction'
         # azimuths
         if self.ang_exit < 1e-12:
@@ -525,8 +534,9 @@ class IntermediateData:
                 method='linear')
             ref_data = ref_data.reindex(spectral_data.index)
             intermediate_data = ref_data.mul(spectral_data, axis=0)
-        intermediate_data /= cos(self.correction_angle) #Hier hatte ursprünglich der cos gefehlt (wurde nachgetragen). 
+        intermediate_data /= cos(self.correction_angle)  # TODO: Jan added cos here -> check if that is right
         if save_intermediate:
+            output_file.mkdir(exist_ok=True)
             with open(output_file, 'w') as f:
                 # write angle data
                 for key, value in self.angle_data.items():
@@ -575,9 +585,9 @@ class OutputData:
         angle_data : dict
             Dictionary containing the angles of the intermediate data
         meta_data : dict
-            Dictionary containing the meta data of the original spectral data
+            Dictionary containing the metadata of the original spectral data
         filter_dir : pathlib.Path
-            Path to the filter file
+            The Path to the filter file
 
         Returns
         -------
@@ -627,7 +637,7 @@ class OutputData:
         Parameters
         ----------
         filter_dir : pathlib.Path
-            Path to the filter file
+            The Path to the filter file
 
         Returns
         -------
