@@ -26,7 +26,7 @@ cam_or_spectro = 1  # 0: camera, 1: spectrometer
 spotsize = 1
 divergence = 5
 N_tp, N_pp = 24, 16  # 12, 16 #24, 16 #20,12
-N_to, N_po = 10, 1   # 12, 16#8, 1#10, 1#1, 12#10, 1 #16,1
+N_to, N_po = 10, 1  # 12, 16#8, 1#10, 1#1, 12#10, 1 #16,1
 rnd = 1  # rounding 1
 max_grad = 75
 
@@ -62,6 +62,7 @@ Output:
     - divergence (1 ... 5)
 """
 
+
 # rotating a vector: first theta then phi direction
 # rotating a coordinate system: first phi then theta direction and negative angles
 
@@ -81,6 +82,7 @@ def rotation_theta(r, theta):
 def angle_to_cartesian(theta, phi):
     """convert spherical coordinates with r=1 into cartesian coordinates"""
     return np.array((np.sin(theta) * np.cos(phi), np.sin(theta) * np.sin(phi), np.cos(theta)))
+
 
 def cartesian_to_angle(r):
     """convert cartesian coordinates with r=1 into spherical coordinates"""
@@ -109,30 +111,33 @@ def angle_to_goniometer(theta_out, phi_out, theta_in, phi_in):
     elif cos_d < -1:
         cos_d = -1
     delta = np.arccos(cos_d)
-    if delta < 28*np.pi/180:
+    if delta < 28 * np.pi / 180:
         delta = -delta
-    if np.sin(delta)*np.sin(theta_in) ==0:
+    if np.sin(delta) * np.sin(theta_in) == 0:
         epsilon = 0
     else:
-        cos_e = (np.cos(theta_out) - np.cos(delta)*np.cos(theta_in))/(np.sin(delta)*np.sin(theta_in))
-        sin_e = (np.cos(phi_in)*np.cos(delta)-np.cos(phi_out)*np.sin(theta_out)*np.sin(theta_in)-np.cos(theta_out)*np.cos(theta_in)*np.cos(phi_in))/(np.sin(phi_in)*np.sin(delta)*np.sin(theta_in))
+        cos_e = (np.cos(theta_out) - np.cos(delta) * np.cos(theta_in)) / (np.sin(delta) * np.sin(theta_in))
+        sin_e = (np.cos(phi_in) * np.cos(delta) - np.cos(phi_out) * np.sin(theta_out) * np.sin(theta_in) - np.cos(
+            theta_out) * np.cos(theta_in) * np.cos(phi_in)) / (np.sin(phi_in) * np.sin(delta) * np.sin(theta_in))
         # + changed to -
         if cos_e > 1:
             epsilon = 0
-        elif cos_e<-1:
+        elif cos_e < -1:
             epsilon = np.pi
         else:
             epsilon = np.arccos(cos_e)
             if sin_e < 0:
-                epsilon = 2*np.pi - epsilon
+                epsilon = 2 * np.pi - epsilon
     #delta<0: epsilon's value increases/decreases by pi
-    beta = np.arctan(np.cos(epsilon)*np.tan(theta_in))
+    beta = np.arctan(np.cos(epsilon) * np.tan(theta_in))
     #delta<0: beta's value changes sign
     if abs(1 - np.sin(epsilon) ** 2 * np.sin(theta_in) ** 2) < 1e-7:
         gamma = 0
     else:
-        sin_g = (-np.sin(epsilon)*np.cos(theta_in)*np.cos(phi_in)+np.cos(epsilon)*np.sin(phi_in))/(np.sqrt(1-np.sin(epsilon)**2 * np.sin(theta_in)**2)) #added brackets
-        cos_g = (-np.sin(epsilon) * np.cos(theta_in) * np.sin(phi_in) - np.cos(epsilon) * np.cos(phi_in)) / (np.sqrt(1 - np.sin(epsilon) ** 2 * np.sin(theta_in) ** 2)) #changed sin to cos
+        sin_g = (-np.sin(epsilon) * np.cos(theta_in) * np.cos(phi_in) + np.cos(epsilon) * np.sin(phi_in)) / (
+            np.sqrt(1 - np.sin(epsilon) ** 2 * np.sin(theta_in) ** 2))  #added brackets
+        cos_g = (-np.sin(epsilon) * np.cos(theta_in) * np.sin(phi_in) - np.cos(epsilon) * np.cos(phi_in)) / (
+            np.sqrt(1 - np.sin(epsilon) ** 2 * np.sin(theta_in) ** 2))  #changed sin to cos
         if cos_g > 1:
             cos_g = 1
         if cos_g < -1:
@@ -150,14 +155,14 @@ def angle_to_goniometer(theta_out, phi_out, theta_in, phi_in):
 def goniometer_to_angle(alpha, beta, gamma, delta):
     """transform goniometer parameters to outgoing and incident direction"""
     alpha = -alpha
-    theta_in = np.arccos(np.cos(alpha)*np.cos(beta))
-    theta_out = np.arccos(np.cos(alpha)*np.cos(delta-beta))
+    theta_in = np.arccos(np.cos(alpha) * np.cos(beta))
+    theta_out = np.arccos(np.cos(alpha) * np.cos(delta - beta))
 
-    S1 = np.sin(alpha) * np.cos(gamma) * np.cos(beta-delta) + np.sin(gamma) * np.sin(beta-delta)
+    S1 = np.sin(alpha) * np.cos(gamma) * np.cos(beta - delta) + np.sin(gamma) * np.sin(beta - delta)
     S2 = np.sin(alpha) * np.cos(gamma) * np.cos(beta) + np.sin(gamma) * np.sin(beta)
     #print(S1)
 
-    if abs(np.sqrt(1-np.cos(alpha)**2 * np.cos(beta-delta)**2)) < 1e-5:
+    if abs(np.sqrt(1 - np.cos(alpha) ** 2 * np.cos(beta - delta) ** 2)) < 1e-5:
         phi_out = np.pi
     else:
         phi_out_cos = (np.cos(beta - delta) * np.sin(alpha) * np.sin(gamma) - np.sin(beta - delta) * np.cos(gamma)) / \
@@ -167,22 +172,22 @@ def goniometer_to_angle(alpha, beta, gamma, delta):
         elif phi_out_cos < -1:
             phi_out_cos = -1
         phi_out = np.arccos(phi_out_cos)
-        if S1 < 0:# and S2!=0:
-            phi_out = 2*np.pi - phi_out
-    
-    if abs(np.sqrt(1-np.cos(alpha)**2 * np.cos(beta)**2)) < 1e-5:
+        if S1 < 0:  # and S2!=0:
+            phi_out = 2 * np.pi - phi_out
+
+    if abs(np.sqrt(1 - np.cos(alpha) ** 2 * np.cos(beta) ** 2)) < 1e-5:
         phi_in = 0.0
     else:
         phi_in_cos = (-np.sin(beta) * np.cos(gamma) + np.sin(alpha) * np.cos(beta) * np.sin(gamma)) / \
-                 np.sqrt(1 - np.cos(alpha) ** 2 * np.cos(beta) ** 2)
+                     np.sqrt(1 - np.cos(alpha) ** 2 * np.cos(beta) ** 2)
         if phi_in_cos > 1:
             phi_in_cos = 1
         elif phi_in_cos < -1:
             phi_in_cos = -1
         phi_in = np.arccos(phi_in_cos)
-        if S2 < 0:# and S1!=0:
-            phi_in = 2*np.pi - phi_in
-    
+        if S2 < 0:  # and S1!=0:
+            phi_in = 2 * np.pi - phi_in
+
     #return np.array([theta_in, phi_in, theta_out, phi_out])
     return theta_out, phi_out, theta_in, phi_in
 
@@ -201,50 +206,51 @@ def test_angles(th_o, ph_o, th_i, ph_i, a, b, c, d):
     diff_ph_i = ph_i - ph_i_2
     diff_list = np.array([diff_th_o, diff_ph_o, diff_th_i, diff_ph_i]) * 180 / np.pi
     #far_away = any(abs(x) > 1 for x in diff_list)
-    far_away = [x for x in range(len(diff_list)) if abs(diff_list[x])>1.1]
+    far_away = [x for x in range(len(diff_list)) if abs(diff_list[x]) > 1.1]
     #if far_away == True:
     if len(far_away) > 0:
         x = far_away[0]
         if x == 1 or x == 3:
             if wanted[x] > 1 and angles[x] < 359:
-                print("angles don't fit.", far_away , " wanted:", wanted, "control:", angles)
+                print("angles don't fit.", far_away, " wanted:", wanted, "control:", angles)
         else:
-            print("angles don't fit.", far_away , " wanted:", wanted, "control:", angles)
+            print("angles don't fit.", far_away, " wanted:", wanted, "control:", angles)
     #cond1 = (abs(th_o*180/np.pi - th_o_2*180/np.pi) < 1e-5)
     #cond2 = (abs(th_i*180/np.pi - th_i_2*180/np.pi) < 1e-5)
-    diff = (ph_i_2 - ph_o_2) * 180/np.pi
+    diff = (ph_i_2 - ph_o_2) * 180 / np.pi
     if diff > 180:
-        diff = diff-360
-    elif diff <-180:
-        diff =diff+360
-    phin = ph_i *180/np.pi
-    if light_source_spotsize/np.cos(b) > detector_spotsize/np.cos(d-b):
+        diff = diff - 360
+    elif diff < -180:
+        diff = diff + 360
+    phin = ph_i * 180 / np.pi
+    if light_source_spotsize / np.cos(b) > detector_spotsize / np.cos(d - b):
         index_2 = True
     else:
         index_2 = False
 
-    if th_o <1e-5:
-        cond3 = (abs(ph_i_2*180/np.pi) - abs(ph_i*180/np.pi))%180<1e-5 or (abs(ph_i_2*180/np.pi) - abs(ph_i*180/np.pi))%180-180<1e-5
+    if th_o < 1e-5:
+        cond3 = (abs(ph_i_2 * 180 / np.pi) - abs(ph_i * 180 / np.pi)) % 180 < 1e-5 or (
+                    abs(ph_i_2 * 180 / np.pi) - abs(ph_i * 180 / np.pi)) % 180 - 180 < 1e-5
     else:
         cond3 = abs((abs(diff) - abs(phin))) < 1e-5
-    if not(cond3):
+    if not (cond3):
         index_1 = True
     else:
         index_1 = False
-    if a < -np.pi/2 or a > np.pi/2:
+    if a < -np.pi / 2 or a > np.pi / 2:
         print("alpha")
-    if b < -np.pi/2 or b > np.pi/2:
+    if b < -np.pi / 2 or b > np.pi / 2:
         print("beta")
     if change_gamma == True:
-        if c <-np.pi/2 or c > 3*np.pi/2:
+        if c < -np.pi / 2 or c > 3 * np.pi / 2:
             print("gamma")
     elif change_gamma == False:
-        if c <-np.pi or c > np.pi:
+        if c < -np.pi or c > np.pi:
             print("gamma")
     #if c <-np.pi or c > np.pi:
-        #print("gamma")
-    if abs(d) < 8*np.pi/180 or d > 192*np.pi/180:
-        print("delta",d*180/np.pi)
+    #print("gamma")
+    if abs(d) < 8 * np.pi / 180 or d > 192 * np.pi / 180:
+        print("delta", d * 180 / np.pi)
     return angles, index_1, index_2
 
 
@@ -304,55 +310,64 @@ def write_table():
             theta_out = k * np.pi / 2 / N_to
         for j in range(N_tp):
             if N_tp == 1:
-                theta_p = np.pi/4
+                theta_p = np.pi / 4
             else:
                 theta_p = j * np.pi / 2 / N_tp
             if theta_out == 0 or N_po == 1:
                 phi_out = np.pi
-                if theta_p==0:
+                if theta_p == 0:
                     # direct reflexion
-                    phi_p=0
-                    output, angles, index_1, index_2 = find_goniometer_angles(theta_out, phi_out, theta_p, phi_p, parameterization, spectrometer, camera, spotsize, divergence)
+                    phi_p = 0
+                    output, angles, index_1, index_2 = find_goniometer_angles(theta_out, phi_out, theta_p, phi_p,
+                                                                              parameterization, spectrometer, camera,
+                                                                              spotsize, divergence)
                     if not output == False:
                         output_list.append(output)
                         angle_list.append(angles)
                     if index_1 == True:
                         index += 1
                     if index_2 == True:
-                        index2 +=1
+                        index2 += 1
                 else:
                     #not direct reflexion
                     for i in range(N_pp):
-                    #for i in range(int(N_pp/2+1)): # if N_phi = 10: loop over 6 because of reciprocity/isotropy
+                        #for i in range(int(N_pp/2+1)): # if N_phi = 10: loop over 6 because of reciprocity/isotropy
                         phi_p = 2 * i * np.pi / N_pp
-                        output, angles, index_1, index_2 = find_goniometer_angles(theta_out, phi_out, theta_p, phi_p, parameterization, spectrometer, camera, spotsize, divergence)
+                        output, angles, index_1, index_2 = find_goniometer_angles(theta_out, phi_out, theta_p, phi_p,
+                                                                                  parameterization, spectrometer,
+                                                                                  camera, spotsize, divergence)
                         if not output == False:
                             output_list.append(output)
                             angle_list.append(angles)
                         if index_1 == True:
                             index += 1
                         if index_2 == True:
-                            index2 +=1
+                            index2 += 1
             else:
                 for l in range(N_po):
                     phi_out = l * 2 * np.pi / N_po
-                    if theta_p==0:
+                    if theta_p == 0:
                         # direct reflexion
-                        phi_p=0
-                        output, angles, index_1, index_2 = find_goniometer_angles(theta_out, phi_out, theta_p, phi_p, parameterization, spectrometer, camera, spotsize, divergence)
+                        phi_p = 0
+                        output, angles, index_1, index_2 = find_goniometer_angles(theta_out, phi_out, theta_p, phi_p,
+                                                                                  parameterization, spectrometer,
+                                                                                  camera, spotsize, divergence)
                         if not output == False:
                             output_list.append(output)
                             angle_list.append(angles)
                         if index_1 == True:
                             index += 1
                         if index_2 == True:
-                            index2 +=1
+                            index2 += 1
                     else:
                         # not direct reflexion
                         for i in range(N_pp):
-                        # for i in range(int(N_pp/2+1)): # if N_phi = 10: loop over 6 because of reciprocity/isotropy
+                            # for i in range(int(N_pp/2+1)): # if N_phi = 10: loop over 6 because of reciprocity/isotropy
                             phi_p = 2 * i * np.pi / N_pp
-                            output, angles, index_1, index_2 = find_goniometer_angles(theta_out, phi_out, theta_p, phi_p, parameterization, spectrometer, camera, spotsize, divergence)
+                            output, angles, index_1, index_2 = find_goniometer_angles(theta_out, phi_out, theta_p,
+                                                                                      phi_p, parameterization,
+                                                                                      spectrometer, camera, spotsize,
+                                                                                      divergence)
                             if not output == False:
                                 output_list.append(output)
                                 angle_list.append(angles)
@@ -360,10 +375,10 @@ def write_table():
                                 index += 1
                             if index_2 is True:
                                 index2 += 1
-    
+
     df = pd.DataFrame(output_list)
     print(np.array(angle_list))
-    print("Anzahl Messpunkte",len(df))
+    print("Anzahl Messpunkte", len(df))
     """
     #if not os.path.exists(Measurement_table):
     #    os.makedirs(Measurement_table)
@@ -372,8 +387,8 @@ def write_table():
     else:
         df.to_csv("Measurement_table\\"+ "BRDF_measurement_total_" + str(N_tp) + str(N_pp) + str(N_to) + str(N_po) + "param" + str(parameterization) + ".csv", sep="\t", index=False, header=False)
     """
-    print("Anzahl fehlerhafte Messpunkte",index2)
-    
+    print("Anzahl fehlerhafte Messpunkte", index2)
+
     # if N_to > 1:
     #    th_o_plot = angle_list[int(len(angle_list)/2)][0]
     # else:
@@ -381,19 +396,19 @@ def write_table():
     th_o_plot = 45
     print(th_o_plot)
     print(list(enumerate(angle_list))[0])
-    indices = [index for index, values in enumerate(angle_list) if abs(values[0]-th_o_plot) < 2]
+    indices = [index for index, values in enumerate(angle_list) if abs(values[0] - th_o_plot) < 2]
     print(len(indices))
     remaining_angles = np.array(angle_list)[indices]
     ph_o_plot = 180
-    indices_1 = [index for index, values in enumerate(remaining_angles) if abs(values[1]-ph_o_plot) < 2]
+    indices_1 = [index for index, values in enumerate(remaining_angles) if abs(values[1] - ph_o_plot) < 2]
     final_angles = remaining_angles[indices_1]
-    xyz = np.array([angle_to_cartesian(values[2]*np.pi/180, values[3]*np.pi/180) for values in final_angles])
+    xyz = np.array([angle_to_cartesian(values[2] * np.pi / 180, values[3] * np.pi / 180) for values in final_angles])
 
     x = np.array([xyz[i][0] for i in range(len(xyz))])
     y = np.array([xyz[i][1] for i in range(len(xyz))])
-    circle = plt.Circle((0,0), 1, alpha=0.3)
+    circle = plt.Circle((0, 0), 1, alpha=0.3)
     fig, ax = plt.subplots()
-    ax.scatter(x,y)
+    ax.scatter(x, y)
     # plt.scatter(x,y)
     ax.axis('equal')
     ax.add_patch(circle)
