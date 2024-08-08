@@ -1,25 +1,18 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Nov  1 11:52:41 2023
+import os
 
-@author: janhen
-"""
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 
 # TODO:
 #  - fix formatting
 #  - small refactoring
+#  - what is N_to, N_pp, N_tp, N_po? What is alpha, beta, gamma, delta?
 #  - save generated measurement tables to measurement_procedues folder
 #  - add a function to estimate the measurement time for a given table
 #  - add a gooey implementation to create the measurement table
 #  - fix the csv format -> does this need fixing? I remember some minor issues
 
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib import cm, colors
-from mpl_toolkits.mplot3d import Axes3D
-import os
-import h5py
 
 parameterization = 1  # 0: omega_i, 1: omega_h
 cam_or_spectro = 1  # 0: camera, 1: spectrometer
@@ -36,11 +29,11 @@ detector_spotsize = 20
 light_source_spotsize = 5.5
 
 """
-Create a table to measure the BRDF of a material. The outgoing direction is constant - the parameterisation
+Create a table to measure the BRDF of a material. The outgoing direction is constant - the parametrisation
 direction is varying.
 Only reflection is measured -> delta is in [0...180°[
 Input:
-    -type of parameterisation (halfangle or incident angle)
+    -type of parametrisation (half-angle or incident angle)
     -outgoing angles theta_o and phi_o (for isotropic set phi_o = 0 -> surface tangent points to omega_o direction)
     -camera or spectrometer?
     -spotsize (1 ... 6)
@@ -48,7 +41,7 @@ Input:
     -number of samples for each angle
         - N_to
         - N_pp
-        _ N_tp
+        - N_tp
 Output:
     - angles
         - beta
@@ -69,8 +62,8 @@ Output:
 
 def rotation_phi(r, phi):
     """rotate vector/coordinate system in phi direction"""
-    R_phi = np.array([[np.cos(phi), -np.sin(phi), 0], [np.sin(phi), np.cos(phi), 0], [0, 0, 1]])
-    return np.dot(R_phi, r)
+    r_phi = np.array([[np.cos(phi), -np.sin(phi), 0], [np.sin(phi), np.cos(phi), 0], [0, 0, 1]])
+    return np.dot(r_phi, r)
 
 
 def rotation_theta(r, theta):
@@ -170,7 +163,7 @@ def goniometer_to_angle(alpha, beta, gamma, delta):
         elif phi_out_cos < -1:
             phi_out_cos = -1
         phi_out = np.arccos(phi_out_cos)
-        if s1 < 0:  # and s2!=0:
+        if s1 < 0:  # and s2 != 0:
             phi_out = 2 * np.pi - phi_out
 
     if abs(np.sqrt(1 - np.cos(alpha) ** 2 * np.cos(beta) ** 2)) < 1e-5:
@@ -183,7 +176,7 @@ def goniometer_to_angle(alpha, beta, gamma, delta):
         elif phi_in_cos < -1:
             phi_in_cos = -1
         phi_in = np.arccos(phi_in_cos)
-        if s2 < 0:  # and s1!=0:
+        if s2 < 0:  # and s1 != 0:
             phi_in = 2 * np.pi - phi_in
 
     return theta_out, phi_out, theta_in, phi_in
@@ -229,7 +222,7 @@ def test_angles(th_o, ph_o, th_i, ph_i, a, b, c, d):
 
     if th_o < 1e-5:
         cond3 = (abs(ph_i_2 * 180 / np.pi) - abs(ph_i * 180 / np.pi)) % 180 < 1e-5 or (
-                    abs(ph_i_2 * 180 / np.pi) - abs(ph_i * 180 / np.pi)) % 180 - 180 < 1e-5
+                abs(ph_i_2 * 180 / np.pi) - abs(ph_i * 180 / np.pi)) % 180 - 180 < 1e-5
     else:
         cond3 = abs((abs(diff) - abs(phin))) < 1e-5
     if not cond3:
@@ -270,7 +263,7 @@ def find_goniometer_angles(theta_out, phi_out, theta_p, phi_p, param, spectr, ca
             ar = round(alpha * 180 / np.pi, rnd)
             br = round(beta * 180 / np.pi, rnd)
             cr = round(gamma * 180 / np.pi, rnd)
-            if change_gamma == True:
+            if change_gamma:
                 if cr < -90:
                     cr = cr + 360
             dr = round(delta * 180 / np.pi, rnd)
@@ -288,7 +281,7 @@ def find_goniometer_angles(theta_out, phi_out, theta_p, phi_p, param, spectr, ca
         return False, False, False, False
 
 
-def write_table():
+def write_table(show_plots=False):
     """write table for goniometer measurements. to make the measurement faster, sort the table by delta (4th column)"""
 
     if cam_or_spectro:
@@ -315,17 +308,17 @@ def write_table():
             if theta_out == 0 or N_po == 1:
                 phi_out = np.pi
                 if theta_p == 0:
-                    # direct reflexion
+                    # direct reflection
                     phi_p = 0
                     output, angles, index_1, index_2 = find_goniometer_angles(theta_out, phi_out, theta_p, phi_p,
                                                                               parameterization, spectrometer, camera,
                                                                               spotsize, divergence)
-                    if not output == False:
+                    if output is not False:
                         output_list.append(output)
                         angle_list.append(angles)
-                    if index_1 == True:
+                    if index_1:
                         index += 1
-                    if index_2 == True:
+                    if index_2:
                         index2 += 1
                 else:
                     # not direct reflexion
@@ -335,31 +328,31 @@ def write_table():
                         output, angles, index_1, index_2 = find_goniometer_angles(theta_out, phi_out, theta_p, phi_p,
                                                                                   parameterization, spectrometer,
                                                                                   camera, spotsize, divergence)
-                        if not output == False:
+                        if output is not False:
                             output_list.append(output)
                             angle_list.append(angles)
-                        if index_1 == True:
+                        if index_1:
                             index += 1
-                        if index_2 == True:
+                        if index_2:
                             index2 += 1
             else:
                 for l in range(N_po):
                     phi_out = l * 2 * np.pi / N_po
                     if theta_p == 0:
-                        # direct reflexion
+                        # direct reflection
                         phi_p = 0
                         output, angles, index_1, index_2 = find_goniometer_angles(theta_out, phi_out, theta_p, phi_p,
                                                                                   parameterization, spectrometer,
                                                                                   camera, spotsize, divergence)
-                        if not output == False:
+                        if output is not False:
                             output_list.append(output)
                             angle_list.append(angles)
-                        if index_1 == True:
+                        if index_1:
                             index += 1
-                        if index_2 == True:
+                        if index_2:
                             index2 += 1
                     else:
-                        # not direct reflexion
+                        # not direct reflection
                         for i in range(N_pp):
                             # for i in range(int(N_pp/2+1)): # if N_phi = 10: loop over 6 because of reciprocity/isotropy
                             phi_p = 2 * i * np.pi / N_pp
@@ -367,42 +360,40 @@ def write_table():
                                                                                       phi_p, parameterization,
                                                                                       spectrometer, camera, spotsize,
                                                                                       divergence)
-                            if not output == False:
+                            if output is not False:
                                 output_list.append(output)
                                 angle_list.append(angles)
-                            if index_1 is True:
+                            if index_1:
                                 index += 1
-                            if index_2 is True:
+                            if index_2:
                                 index2 += 1
 
+    # save the measurement table to a csv file
+    if not os.path.exists("measurement_procedures"):
+        os.makedirs("measurement_procedures")
+    save_name = "BRDF_measurement_total_" + str(N_tp) + str(N_pp) + str(N_to) + str(N_po) + "param" + str(
+        parameterization)
+    if change_gamma:
+        save_name += "_gamma-plus-360"
     df = pd.DataFrame(output_list)
-    print(np.array(angle_list))
-    print("Anzahl Messpunkte", len(df))
-    """
-    #if not os.path.exists(Measurement_table):
-    #    os.makedirs(Measurement_table)
-    if change_gamma == True:
-        df.to_csv("Measurement_table\\"+ "BRDF_measurement_total_" + str(N_tp) + str(N_pp) + str(N_to) + str(N_po) + "param" + str(parameterization) + "_gamma-plus-360.csv", sep="\t", index=False, header=False)
-    else:
-        df.to_csv("Measurement_table\\"+ "BRDF_measurement_total_" + str(N_tp) + str(N_pp) + str(N_to) + str(N_po) + "param" + str(parameterization) + ".csv", sep="\t", index=False, header=False)
-    """
-    print("Anzahl fehlerhafte Messpunkte", index2)
+    print("Anzahl Messpunkte:", len(df))
+    print("Anzahl fehlerhafte Messpunkte:", index2)
+    df.to_csv(f"measurement_procedures\\{save_name}.csv", sep=";", index=False, header=False)
 
-    # if N_to > 1:
-    #    th_o_plot = angle_list[int(len(angle_list)/2)][0]
-    # else:
-    #    th_o_plot = 45
+    if show_plots:
+        create_plots(angle_list)
+
+
+def create_plots(angle_list):
+
+    # plot the measured points on a sphere
     th_o_plot = 45
-    print(th_o_plot)
-    print(list(enumerate(angle_list))[0])
     indices = [index for index, values in enumerate(angle_list) if abs(values[0] - th_o_plot) < 2]
-    print(len(indices))
     remaining_angles = np.array(angle_list)[indices]
     ph_o_plot = 180
     indices_1 = [index for index, values in enumerate(remaining_angles) if abs(values[1] - ph_o_plot) < 2]
     final_angles = remaining_angles[indices_1]
     xyz = np.array([angle_to_cartesian(values[2] * np.pi / 180, values[3] * np.pi / 180) for values in final_angles])
-
     x = np.array([xyz[i][0] for i in range(len(xyz))])
     y = np.array([xyz[i][1] for i in range(len(xyz))])
     circle = plt.Circle((0, 0), 1, alpha=0.3)
@@ -411,9 +402,7 @@ def write_table():
     ax.axis('equal')
     ax.add_patch(circle)
     plt.show()
-    # plt.savefig("Measurement_table\\" + "angles +" str(N_tp) + str(N_pp) + str(N_to) + str(N_po) + "_outgoing-fest.png"")
 
-    """
     # create a sphere to see which points are measured
     r = 1
     pi = np.pi
@@ -427,15 +416,15 @@ def write_table():
     ax = fig.add_subplot(111, projection='3d')
     ax.plot_surface(
         x, y, z, rstride=1, cstride=1, color='c', alpha=0.6, linewidth=0)
-    ax.scatter(xx, yy, zz, color="k", s=20)
+    ax.scatter(x, y, z, color="k", s=20)
     ax.set_xlim([-1, 1])
     ax.set_ylim([-1, 1])
     ax.set_zlim([-1, 1])
     ax.set_aspect("auto")
     plt.tight_layout()
     plt.show()
-    """
 
 
 if __name__ == "__main__":
-    write_table()
+    write_table(show_plots=True)
+
