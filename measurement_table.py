@@ -75,8 +75,8 @@ def rotation_phi(r, phi):
 
 def rotation_theta(r, theta):
     """rotate vector/coordinate system in theta direction"""
-    R_theta = np.array([[np.cos(theta), 0, np.sin(theta)], [0, 1, 0], [-np.sin(theta), 0, np.cos(theta)]])
-    return np.dot(R_theta, r)
+    r_theta = np.array([[np.cos(theta), 0, np.sin(theta)], [0, 1, 0], [-np.sin(theta), 0, np.cos(theta)]])
+    return np.dot(r_theta, r)
 
 
 def angle_to_cartesian(theta, phi):
@@ -99,7 +99,6 @@ def find_incident_coord(theta_out, phi_out, theta_half, phi_half):
     half_vector = angle_to_cartesian(theta_half, phi_half)
     out_vector = angle_to_cartesian(theta_out, phi_out)
     in_vector = 2 * np.dot(out_vector, half_vector) * half_vector - out_vector
-    # print(np.linalg.norm(in_vector))
     return cartesian_to_angle(in_vector)
 
 
@@ -128,16 +127,16 @@ def angle_to_goniometer(theta_out, phi_out, theta_in, phi_in):
             epsilon = np.arccos(cos_e)
             if sin_e < 0:
                 epsilon = 2 * np.pi - epsilon
-    #delta<0: epsilon's value increases/decreases by pi
+
+    # delta < 0: epsilon increases/decreases by pi; beta changes sign
     beta = np.arctan(np.cos(epsilon) * np.tan(theta_in))
-    #delta<0: beta's value changes sign
     if abs(1 - np.sin(epsilon) ** 2 * np.sin(theta_in) ** 2) < 1e-7:
         gamma = 0
     else:
         sin_g = (-np.sin(epsilon) * np.cos(theta_in) * np.cos(phi_in) + np.cos(epsilon) * np.sin(phi_in)) / (
-            np.sqrt(1 - np.sin(epsilon) ** 2 * np.sin(theta_in) ** 2))  #added brackets
+            np.sqrt(1 - np.sin(epsilon) ** 2 * np.sin(theta_in) ** 2))  # added brackets
         cos_g = (-np.sin(epsilon) * np.cos(theta_in) * np.sin(phi_in) - np.cos(epsilon) * np.cos(phi_in)) / (
-            np.sqrt(1 - np.sin(epsilon) ** 2 * np.sin(theta_in) ** 2))  #changed sin to cos
+            np.sqrt(1 - np.sin(epsilon) ** 2 * np.sin(theta_in) ** 2))  # changed sin to cos
         if cos_g > 1:
             cos_g = 1
         if cos_g < -1:
@@ -146,9 +145,9 @@ def angle_to_goniometer(theta_out, phi_out, theta_in, phi_in):
             gamma = np.arccos(cos_g)
         else:
             gamma = - np.arccos(cos_g)
-    #delta<0: gamma's value increases/decreases by pi
+
+    # delta < 0: gamma increases/decreases by pi; alpha changes sign
     alpha = np.arcsin(-np.sin(epsilon) * np.sin(theta_in))
-    #delta<0: alpha's value changes sign
     return -alpha, beta, gamma, delta
 
 
@@ -158,9 +157,8 @@ def goniometer_to_angle(alpha, beta, gamma, delta):
     theta_in = np.arccos(np.cos(alpha) * np.cos(beta))
     theta_out = np.arccos(np.cos(alpha) * np.cos(delta - beta))
 
-    S1 = np.sin(alpha) * np.cos(gamma) * np.cos(beta - delta) + np.sin(gamma) * np.sin(beta - delta)
-    S2 = np.sin(alpha) * np.cos(gamma) * np.cos(beta) + np.sin(gamma) * np.sin(beta)
-    #print(S1)
+    s1 = np.sin(alpha) * np.cos(gamma) * np.cos(beta - delta) + np.sin(gamma) * np.sin(beta - delta)
+    s2 = np.sin(alpha) * np.cos(gamma) * np.cos(beta) + np.sin(gamma) * np.sin(beta)
 
     if abs(np.sqrt(1 - np.cos(alpha) ** 2 * np.cos(beta - delta) ** 2)) < 1e-5:
         phi_out = np.pi
@@ -172,7 +170,7 @@ def goniometer_to_angle(alpha, beta, gamma, delta):
         elif phi_out_cos < -1:
             phi_out_cos = -1
         phi_out = np.arccos(phi_out_cos)
-        if S1 < 0:  # and S2!=0:
+        if s1 < 0:  # and s2!=0:
             phi_out = 2 * np.pi - phi_out
 
     if abs(np.sqrt(1 - np.cos(alpha) ** 2 * np.cos(beta) ** 2)) < 1e-5:
@@ -185,10 +183,9 @@ def goniometer_to_angle(alpha, beta, gamma, delta):
         elif phi_in_cos < -1:
             phi_in_cos = -1
         phi_in = np.arccos(phi_in_cos)
-        if S2 < 0:  # and S1!=0:
+        if s2 < 0:  # and s1!=0:
             phi_in = 2 * np.pi - phi_in
 
-    #return np.array([theta_in, phi_in, theta_out, phi_out])
     return theta_out, phi_out, theta_in, phi_in
 
 
@@ -205,9 +202,10 @@ def test_angles(th_o, ph_o, th_i, ph_i, a, b, c, d):
     diff_th_i = th_i - th_i_2
     diff_ph_i = ph_i - ph_i_2
     diff_list = np.array([diff_th_o, diff_ph_o, diff_th_i, diff_ph_i]) * 180 / np.pi
-    #far_away = any(abs(x) > 1 for x in diff_list)
+
+    # far_away = any(abs(x) > 1 for x in diff_list)
+    # if far_away == True:
     far_away = [x for x in range(len(diff_list)) if abs(diff_list[x]) > 1.1]
-    #if far_away == True:
     if len(far_away) > 0:
         x = far_away[0]
         if x == 1 or x == 3:
@@ -215,8 +213,9 @@ def test_angles(th_o, ph_o, th_i, ph_i, a, b, c, d):
                 print("angles don't fit.", far_away, " wanted:", wanted, "control:", angles)
         else:
             print("angles don't fit.", far_away, " wanted:", wanted, "control:", angles)
-    #cond1 = (abs(th_o*180/np.pi - th_o_2*180/np.pi) < 1e-5)
-    #cond2 = (abs(th_i*180/np.pi - th_i_2*180/np.pi) < 1e-5)
+
+    # cond1 = (abs(th_o*180/np.pi - th_o_2*180/np.pi) < 1e-5)
+    # cond2 = (abs(th_i*180/np.pi - th_i_2*180/np.pi) < 1e-5)
     diff = (ph_i_2 - ph_o_2) * 180 / np.pi
     if diff > 180:
         diff = diff - 360
@@ -233,7 +232,7 @@ def test_angles(th_o, ph_o, th_i, ph_i, a, b, c, d):
                     abs(ph_i_2 * 180 / np.pi) - abs(ph_i * 180 / np.pi)) % 180 - 180 < 1e-5
     else:
         cond3 = abs((abs(diff) - abs(phin))) < 1e-5
-    if not (cond3):
+    if not cond3:
         index_1 = True
     else:
         index_1 = False
@@ -241,14 +240,14 @@ def test_angles(th_o, ph_o, th_i, ph_i, a, b, c, d):
         print("alpha")
     if b < -np.pi / 2 or b > np.pi / 2:
         print("beta")
-    if change_gamma == True:
+    if change_gamma:
         if c < -np.pi / 2 or c > 3 * np.pi / 2:
             print("gamma")
-    elif change_gamma == False:
+    elif not change_gamma:
         if c < -np.pi or c > np.pi:
             print("gamma")
-    #if c <-np.pi or c > np.pi:
-    #print("gamma")
+    # if c <-np.pi or c > np.pi:
+    # print("gamma")
     if abs(d) < 8 * np.pi / 180 or d > 192 * np.pi / 180:
         print("delta", d * 180 / np.pi)
     return angles, index_1, index_2
@@ -329,9 +328,9 @@ def write_table():
                     if index_2 == True:
                         index2 += 1
                 else:
-                    #not direct reflexion
+                    # not direct reflexion
                     for i in range(N_pp):
-                        #for i in range(int(N_pp/2+1)): # if N_phi = 10: loop over 6 because of reciprocity/isotropy
+                        # for i in range(int(N_pp/2+1)): # if N_phi = 10: loop over 6 because of reciprocity/isotropy
                         phi_p = 2 * i * np.pi / N_pp
                         output, angles, index_1, index_2 = find_goniometer_angles(theta_out, phi_out, theta_p, phi_p,
                                                                                   parameterization, spectrometer,
@@ -409,7 +408,6 @@ def write_table():
     circle = plt.Circle((0, 0), 1, alpha=0.3)
     fig, ax = plt.subplots()
     ax.scatter(x, y)
-    # plt.scatter(x,y)
     ax.axis('equal')
     ax.add_patch(circle)
     plt.show()
