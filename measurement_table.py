@@ -170,32 +170,12 @@ def test_angles(th_o, ph_o, th_i, ph_i, a, b, c, d):
     th_o_2, ph_o_2, th_i_2, ph_i_2 = goniometer_to_angle(a, b, c, d)
     angles = np.array([th_o_2, ph_o_2, th_i_2, ph_i_2]) * 180 / np.pi
 
-    """
-    wanted = np.array([th_o, ph_o, th_i, ph_i]) * 180 / np.pi
-    diff_th_o = th_o - th_o_2
-    diff_ph_o = ph_o - ph_o_2
-    diff_th_i = th_i - th_i_2
-    diff_ph_i = ph_i - ph_i_2
-    diff_list = np.array([diff_th_o, diff_ph_o, diff_th_i, diff_ph_i]) * 180 / np.pi
-    print("diff_list:", diff_list)
-    far_away = [x for x in range(len(diff_list)) if abs(diff_list[x]) > 1.1]
-    if len(far_away) > 0:
-        print("far away:", far_away)
-        x = far_away[0]
-        if x == 1 or x == 3:
-            if wanted[x] > 1 and angles[x] < 359:
-                print("angles don't fit.", far_away, " wanted:", wanted, "control:", angles)
-        else:
-            print("angles don't fit.", far_away, " wanted:", wanted, "control:", angles)"""
-
-    # cond1 = (abs(th_o*180/np.pi - th_o_2*180/np.pi) < 1e-5)
-    # cond2 = (abs(th_i*180/np.pi - th_i_2*180/np.pi) < 1e-5)
     diff = (ph_i_2 - ph_o_2) * 180 / np.pi
     if diff > 180:
         diff = diff - 360
     elif diff < -180:
         diff = diff + 360
-    phin = ph_i * 180 / np.pi
+
     if light_source_spotsize / np.cos(b) > detector_spotsize / np.cos(d - b):
         index_2 = True
     else:
@@ -205,25 +185,11 @@ def test_angles(th_o, ph_o, th_i, ph_i, a, b, c, d):
         cond3 = (abs(ph_i_2 * 180 / np.pi) - abs(ph_i * 180 / np.pi)) % 180 < 1e-5 or (
                 abs(ph_i_2 * 180 / np.pi) - abs(ph_i * 180 / np.pi)) % 180 - 180 < 1e-5
     else:
-        cond3 = abs((abs(diff) - abs(phin))) < 1e-5
+        cond3 = abs((abs(diff) - abs(ph_i * 180 / np.pi))) < 1e-5
     if not cond3:
         index_1 = True
     else:
         index_1 = False
-
-    """# print the angles that are not in the correct range
-    if a < -np.pi / 2 or a > np.pi / 2:
-        print("alpha")
-    if b < -np.pi / 2 or b > np.pi / 2:
-        print("beta")
-    if change_gamma:
-        if c < -np.pi / 2 or c > 3 * np.pi / 2:
-            print("gamma")
-    else:
-        if c < -np.pi or c > np.pi:
-            print("gamma")
-    if abs(d) < 8 * np.pi / 180 or d > 192 * np.pi / 180:
-        print("delta", d * 180 / np.pi)"""
 
     return angles, index_1, index_2
 
@@ -257,10 +223,8 @@ def find_goniometer_angles(theta_out, phi_out, theta_p, phi_p, param, spectr, ca
                 print("index_2 is False")
             return output, angles, index_1, index_2
         else:
-            # print("HALLO")
             return False, False, False, False
     else:
-        # print("HALLO_ZWEI")
         return False, False, False, False
 
 
