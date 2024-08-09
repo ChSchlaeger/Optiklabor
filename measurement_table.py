@@ -5,13 +5,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # TODO:
-#  - fix formatting
-#  - small refactoring
+#  - small refactoring -> reduce by 60 lines of code
 #  - what is N_to, N_pp, N_tp, N_po? What is alpha, beta, gamma, delta?
-#  - save generated measurement tables to measurement_procedues folder
 #  - add a function to estimate the measurement time for a given table
+#  - try to optimize the measurement time
 #  - add a gooey implementation to create the measurement table
-#  - fix the csv format -> does this need fixing? I remember some minor issues
 
 
 parameterization = 1  # 0: omega_i, 1: omega_h
@@ -20,7 +18,7 @@ spotsize = 1
 divergence = 5
 N_tp, N_pp = 24, 16  # 12, 16 #24, 16 #20,12
 N_to, N_po = 10, 1  # 12, 16#8, 1#10, 1#1, 12#10, 1 #16,1
-rnd = 1  # rounding 1
+
 max_grad = 75
 
 change_gamma = True
@@ -55,21 +53,8 @@ Output:
     - divergence (1 ... 5)
 """
 
-
 # rotating a vector: first theta then phi direction
 # rotating a coordinate system: first phi then theta direction and negative angles
-
-
-def rotation_phi(r, phi):
-    """rotate vector/coordinate system in phi direction"""
-    r_phi = np.array([[np.cos(phi), -np.sin(phi), 0], [np.sin(phi), np.cos(phi), 0], [0, 0, 1]])
-    return np.dot(r_phi, r)
-
-
-def rotation_theta(r, theta):
-    """rotate vector/coordinate system in theta direction"""
-    r_theta = np.array([[np.cos(theta), 0, np.sin(theta)], [0, 1, 0], [-np.sin(theta), 0, np.cos(theta)]])
-    return np.dot(r_theta, r)
 
 
 def angle_to_cartesian(theta, phi):
@@ -78,12 +63,9 @@ def angle_to_cartesian(theta, phi):
 
 
 def cartesian_to_angle(r):
-    """convert cartesian coordinates with r=1 into spherical coordinates"""
-    x = r[0]
-    y = r[1]
-    z = r[2]
-    theta = np.arccos(z / (np.sqrt(x * x + y * y + z * z)))
-    phi = np.arctan2(y, x)
+    """Convert Cartesian coordinates with r=1 into spherical coordinates."""
+    theta = np.arccos(r[2] / np.linalg.norm(r))
+    phi = np.arctan2(r[1], r[0])
     return theta, phi
 
 
@@ -183,29 +165,28 @@ def goniometer_to_angle(alpha, beta, gamma, delta):
 
 
 def test_angles(th_o, ph_o, th_i, ph_i, a, b, c, d):
-    a = a * np.pi / 180
-    b = b * np.pi / 180
-    c = c * np.pi / 180
-    d = d * np.pi / 180
+
+    a, b, c, d = [x * np.pi / 180 for x in [a, b, c, d]]
     th_o_2, ph_o_2, th_i_2, ph_i_2 = goniometer_to_angle(a, b, c, d)
     angles = np.array([th_o_2, ph_o_2, th_i_2, ph_i_2]) * 180 / np.pi
+
+    """
     wanted = np.array([th_o, ph_o, th_i, ph_i]) * 180 / np.pi
     diff_th_o = th_o - th_o_2
     diff_ph_o = ph_o - ph_o_2
     diff_th_i = th_i - th_i_2
     diff_ph_i = ph_i - ph_i_2
     diff_list = np.array([diff_th_o, diff_ph_o, diff_th_i, diff_ph_i]) * 180 / np.pi
-
-    # far_away = any(abs(x) > 1 for x in diff_list)
-    # if far_away == True:
+    print("diff_list:", diff_list)
     far_away = [x for x in range(len(diff_list)) if abs(diff_list[x]) > 1.1]
     if len(far_away) > 0:
+        print("far away:", far_away)
         x = far_away[0]
         if x == 1 or x == 3:
             if wanted[x] > 1 and angles[x] < 359:
                 print("angles don't fit.", far_away, " wanted:", wanted, "control:", angles)
         else:
-            print("angles don't fit.", far_away, " wanted:", wanted, "control:", angles)
+            print("angles don't fit.", far_away, " wanted:", wanted, "control:", angles)"""
 
     # cond1 = (abs(th_o*180/np.pi - th_o_2*180/np.pi) < 1e-5)
     # cond2 = (abs(th_i*180/np.pi - th_i_2*180/np.pi) < 1e-5)
@@ -229,6 +210,8 @@ def test_angles(th_o, ph_o, th_i, ph_i, a, b, c, d):
         index_1 = True
     else:
         index_1 = False
+
+    """# print the angles that are not in the correct range
     if a < -np.pi / 2 or a > np.pi / 2:
         print("alpha")
     if b < -np.pi / 2 or b > np.pi / 2:
@@ -236,17 +219,16 @@ def test_angles(th_o, ph_o, th_i, ph_i, a, b, c, d):
     if change_gamma:
         if c < -np.pi / 2 or c > 3 * np.pi / 2:
             print("gamma")
-    elif not change_gamma:
+    else:
         if c < -np.pi or c > np.pi:
             print("gamma")
-    # if c <-np.pi or c > np.pi:
-    # print("gamma")
     if abs(d) < 8 * np.pi / 180 or d > 192 * np.pi / 180:
-        print("delta", d * 180 / np.pi)
+        print("delta", d * 180 / np.pi)"""
+
     return angles, index_1, index_2
 
 
-def find_goniometer_angles(theta_out, phi_out, theta_p, phi_p, param, spectr, cam, sp_size, div):
+def find_goniometer_angles(theta_out, phi_out, theta_p, phi_p, param, spectr, cam, sp_size, div, rounding=1):
     if param == 1:
         theta_in, phi_in = find_incident_coord(theta_out, phi_out, theta_p, phi_p)
     else:
@@ -255,29 +237,30 @@ def find_goniometer_angles(theta_out, phi_out, theta_p, phi_p, param, spectr, ca
     if in_vector[2] >= 0 and np.arccos(in_vector[2]) < max_grad / 180 * np.pi and theta_out < max_grad / 180 * np.pi:
         alpha, beta, gamma, delta = angle_to_goniometer(theta_out, phi_out, theta_in, phi_in)
         if abs(delta * 180 / np.pi) > 8:
-            """
-            xx.append(in_vector[0])
-            yy.append(-in_vector[1]) #added -
-            zz.append(in_vector[2])
-            """
-            ar = round(alpha * 180 / np.pi, rnd)
-            br = round(beta * 180 / np.pi, rnd)
-            cr = round(gamma * 180 / np.pi, rnd)
+            alpha = round(alpha * 180 / np.pi, rounding)
+            beta = round(beta * 180 / np.pi, rounding)
+            gamma = round(gamma * 180 / np.pi, rounding)
             if change_gamma:
-                if cr < -90:
-                    cr = cr + 360
-            dr = round(delta * 180 / np.pi, rnd)
-            ax = str(ar)
-            bx = str(br)
-            cx = str(cr)
-            dx = str(dr)
-            bx, ax, cx, dx = bx.replace(".", ","), ax.replace(".", ","), cx.replace(".", ","), dx.replace(".", ",")
-            output = [bx, ax, cx, dx, 0, spectr, cam, sp_size, div]
-            angles, index_1, index_2 = test_angles(theta_out, phi_out, theta_in, phi_in, ar, br, cr, dr)
+                if gamma < -90:
+                    gamma = gamma + 360
+            delta = round(delta * 180 / np.pi, rounding)
+
+            # this is one line in the csv
+            output = [beta, alpha, gamma, delta, 0, spectr, cam, sp_size, div]
+
+            # test if the angles are correct
+            angles, index_1, index_2 = test_angles(theta_out, phi_out, theta_in, phi_in, alpha, beta, gamma, delta)
+
+            if index_1 is False:
+                print("index_1 is False")
+            if index_2 is False:
+                print("index_2 is False")
             return output, angles, index_1, index_2
         else:
+            # print("HALLO")
             return False, False, False, False
     else:
+        # print("HALLO_ZWEI")
         return False, False, False, False
 
 
@@ -376,9 +359,10 @@ def write_table(show_plots=False):
     if change_gamma:
         save_name += "_gamma-plus-360"
     df = pd.DataFrame(output_list)
+    df = df.sort_values(by=[3], ascending=False)
     print("Anzahl Messpunkte:", len(df))
     print("Anzahl fehlerhafte Messpunkte:", index2)
-    df.to_csv(f"measurement_procedures\\{save_name}.csv", sep=";", index=False, header=False)
+    df.to_csv(f"measurement_procedures\\{save_name}.csv", sep=";", decimal=",", index=False, header=False)
 
     if show_plots:
         create_plots(angle_list)
@@ -426,5 +410,5 @@ def create_plots(angle_list):
 
 
 if __name__ == "__main__":
-    write_table(show_plots=True)
+    write_table(show_plots=False)
 
