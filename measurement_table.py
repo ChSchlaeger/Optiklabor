@@ -132,38 +132,7 @@ class MeasurementTable:
         self.output_list = []
         self.angle_list = []
         self.output_df = None
-        self.index = 0
-        self.index2 = 0
-
-    @staticmethod
-    def test_angles(theta_out, phi_in, alpha, beta, gamma, delta):
-
-        alpha, beta, gamma, delta = [x * np.pi / 180 for x in [alpha, beta, gamma, delta]]
-        theta_out_2, phi_out_2, theta_in_2, phi_in_2 = goniometer_to_angle(alpha, beta, gamma, delta)
-        angles = np.array([theta_out_2, phi_out_2, theta_in_2, phi_in_2]) * 180 / np.pi
-
-        diff = (phi_in_2 - phi_out_2) * 180 / np.pi
-        if diff > 180:
-            diff = diff - 360
-        elif diff < -180:
-            diff = diff + 360
-
-        if light_source_spotsize / np.cos(beta) > detector_spotsize / np.cos(delta - beta):
-            index_2 = True
-        else:
-            index_2 = False
-
-        if theta_out < 1e-5:
-            cond3 = (abs(phi_in_2 * 180 / np.pi) - abs(phi_in * 180 / np.pi)) % 180 < 1e-5 or (
-                    abs(phi_in_2 * 180 / np.pi) - abs(phi_in * 180 / np.pi)) % 180 - 180 < 1e-5
-        else:
-            cond3 = abs((abs(diff) - abs(phi_in * 180 / np.pi))) < 1e-5
-        if not cond3:
-            index_1 = True
-        else:
-            index_1 = False
-
-        return angles, index_1, index_2
+        self.number_of_invalid_points = 0
 
     def find_goniometer_angles(self, theta_out, phi_out, theta_p, phi_p):
 
@@ -183,15 +152,16 @@ class MeasurementTable:
                 output = [p.beta_deg, p.alpha_deg, p.gamma_deg, p.delta_deg, 0, self.spectrometer,
                           self.camera, self.spotsize, self.divergence]
 
-                # test if the angles are correct
-                angles, index_1, index_2 = self.test_angles(p.theta_out, p.phi_in, p.alpha_deg, p.beta_deg, p.gamma_deg, p.delta_deg)
+                # check if detector spotsize is large enough for the incident beam
+                if self.light_source_spotsize / np.cos(p.beta) > self.detector_spotsize / np.cos(p.delta - p.beta):
+                    invalid_angle = True
+                else:
+                    invalid_angle = False
 
-                self.angle_list.append(angles)
+                self.angle_list.append([p.alpha, p.beta, p.gamma, p.delta])
                 self.output_list.append(output)
-                if index_1:
-                    self.index += 1
-                if index_2:
-                    self.index2 += 1
+                if invalid_angle:
+                    self.number_of_invalid_points += 1
 
     def write_table(self):
         """write table for goniometer measurements.
@@ -238,7 +208,7 @@ class MeasurementTable:
         self.output_df = self.output_df.sort_values(by=[3], ascending=False)
 
         print("Anzahl Messpunkte:", len(self.output_df))
-        print("Anzahl fehlerhafte Messpunkte:", self.index2)
+        print("Anzahl fehlerhafte Messpunkte:", self.number_of_invalid_points)
 
     def save_to_csv(self, save_name: Union[str, None] = None):
 
