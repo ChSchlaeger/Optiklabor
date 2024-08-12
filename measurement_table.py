@@ -5,13 +5,10 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from geometry import *
 
 # TODO:
 #  - output should be written in the write_table function
-#  - create a class for the measurement table
-#  - what is N_to, N_pp, N_tp, N_po? What is alpha, beta, gamma, delta?
-#  - what is index and index2?
+#  - what is N_to, N_pp, N_tp, N_po?
 #  - add a function to estimate the measurement time for a given table
 #  - try to optimize the measurement time
 #  - add a gooey implementation to create the measurement table
@@ -44,65 +41,100 @@ Output:
 """
 
 
+def cartesian_to_angle(r):
+    """Convert Cartesian coordinates with r=1 into spherical coordinates."""
+    theta = np.arccos(r[2] / np.linalg.norm(r))
+    phi = np.arctan2(r[1], r[0])
+    return theta, phi
+
+
+def angle_to_cartesian(theta, phi):
+    """convert spherical coordinates with r=1 into cartesian coordinates"""
+    return np.array((np.sin(theta) * np.cos(phi), np.sin(theta) * np.sin(phi), np.cos(theta)))
+
+
 class MeasurementPoint:
-    def __init__(self):
+    def __init__(self, theta_out, phi_out, theta_p, phi_p, halfway_parameterization, rounding=1):
+
+        # outgoing angles in radians
+        self.theta_out = theta_out
+        self.phi_out = phi_out
+
+        # incident angles in radians
+        if halfway_parameterization:
+            # if halfway parameterization is used, calculate the incident angles
+            half_vector = angle_to_cartesian(theta_p, phi_p)
+            out_vector = angle_to_cartesian(theta_out, phi_out)
+            in_vector = 2 * np.dot(out_vector, half_vector) * half_vector - out_vector
+            self.theta_in, self.phi_in = cartesian_to_angle(in_vector)
+        else:
+            # otherwise, phi_p and theta_p are the incident angles
+            self.theta_in, self.phi_in = theta_p, phi_p
 
         # incident and outgoing angles in degrees
-        self.theta_out = None
-        self.theta_in = None
-        self.phi_out = None
-        self.phi_in = None
+        self.theta_out_deg = np.rad2deg(self.theta_out)
+        self.theta_in_deg = np.rad2deg(self.theta_in)
+        self.phi_out_deg = np.rad2deg(self.phi_out)
+        self.phi_in_deg = np.rad2deg(self.phi_in)
 
-        # incident and outgoing angles in radians
-        self.theta_out_deg = None
-        self.theta_in_deg = None
-        self.phi_out_deg = None
-        self.phi_in_deg = None
+        # calculate goniometer angles in radians
+        self.alpha, self.beta, self.gamma, self.delta = self.angle_to_goniometer(self.theta_out, self.phi_out,
+                                                                                 self.theta_in, self.phi_in)
 
         # goniometer angles in degrees
-        self.alpha = None
-        self.beta = None
-        self.gamma = None
-        self.delta = None
+        self.alpha_deg = round(np.rad2deg(self.alpha), rounding)
+        self.beta_deg = round(np.rad2deg(self.beta), rounding)
+        self.gamma_deg = round(np.rad2deg(self.gamma), rounding)
+        self.delta_deg = round(np.rad2deg(self.delta), rounding)
 
-        # goniometer angles in radians
-        self.alpha_deg = None
-        self.beta_deg = None
-        self.gamma_deg = None
-        self.delta_deg = None
-
-    @classmethod
-    def create_measurement_point(cls, theta_out, phi_out, theta_p, phi_p, halfway_parameterization, rounding=1):
-
-        p = cls()
-
-        p.theta_out = theta_out
-        p.phi_out = phi_out
-
-        # if halfway parameterization is used, find the incident angles
-        # otherwise, phi_p and theta_p are the incident angles
-        if halfway_parameterization:
-            p.theta_in, p.phi_in = find_incident_angles(theta_out, phi_out, theta_p, phi_p)
+    @staticmethod
+    def angle_to_goniometer(theta_out, phi_out, theta_in, phi_in):
+        """calculate goniometer parameters for given outgoing and incident angles"""
+        cos_d = np.sin(theta_in) * np.sin(theta_out) * np.cos(phi_out - phi_in) + np.cos(theta_in) * np.cos(theta_out)
+        if cos_d > 1:
+            cos_d = 1
+        elif cos_d < -1:
+            cos_d = -1
+        delta = np.arccos(cos_d)
+        if delta < 28 * np.pi / 180:
+            delta = -delta
+        if np.sin(delta) * np.sin(theta_in) == 0:
+            epsilon = 0
         else:
-            p.theta_in, p.phi_in = theta_p, phi_p
+            cos_e = (np.cos(theta_out) - np.cos(delta) * np.cos(theta_in)) / (np.sin(delta) * np.sin(theta_in))
+            sin_e = (np.cos(phi_in) * np.cos(delta) - np.cos(phi_out) * np.sin(theta_out) * np.sin(theta_in) - np.cos(
+                theta_out) * np.cos(theta_in) * np.cos(phi_in)) / (np.sin(phi_in) * np.sin(delta) * np.sin(theta_in))
+            # + changed to -
+            if cos_e > 1:
+                epsilon = 0
+            elif cos_e < -1:
+                epsilon = np.pi
+            else:
+                epsilon = np.arccos(cos_e)
+                if sin_e < 0:
+                    epsilon = 2 * np.pi - epsilon
 
-        # convert to radians
-        p.theta_out_deg = np.rad2deg(p.theta_out)
-        p.theta_in_deg = np.rad2deg(p.theta_in)
-        p.phi_out_deg = np.rad2deg(p.phi_out)
-        p.phi_in_deg = np.rad2deg(p.phi_in)
+        # delta < 0: epsilon increases/decreases by pi; beta changes sign
+        beta = np.arctan(np.cos(epsilon) * np.tan(theta_in))
+        if abs(1 - np.sin(epsilon) ** 2 * np.sin(theta_in) ** 2) < 1e-7:
+            gamma = 0
+        else:
+            sin_g = (-np.sin(epsilon) * np.cos(theta_in) * np.cos(phi_in) + np.cos(epsilon) * np.sin(phi_in)) / (
+                np.sqrt(1 - np.sin(epsilon) ** 2 * np.sin(theta_in) ** 2))  # added brackets
+            cos_g = (-np.sin(epsilon) * np.cos(theta_in) * np.sin(phi_in) - np.cos(epsilon) * np.cos(phi_in)) / (
+                np.sqrt(1 - np.sin(epsilon) ** 2 * np.sin(theta_in) ** 2))  # changed sin to cos
+            if cos_g > 1:
+                cos_g = 1
+            if cos_g < -1:
+                cos_g = -1
+            if sin_g >= 0:
+                gamma = np.arccos(cos_g)
+            else:
+                gamma = - np.arccos(cos_g)
 
-        # calculate goniometer angles
-        p.alpha, p.beta, p.gamma, p.delta = angle_to_goniometer(p.theta_out, p.phi_out,
-                                                                p.theta_in, p.phi_in)
-
-        # convert to radians
-        p.alpha_deg = round(np.rad2deg(p.alpha), rounding)
-        p.beta_deg = round(np.rad2deg(p.beta), rounding)
-        p.gamma_deg = round(np.rad2deg(p.gamma), rounding)
-        p.delta_deg = round(np.rad2deg(p.delta), rounding)
-
-        return p
+        # delta < 0: gamma increases/decreases by pi; alpha changes sign
+        alpha = np.arcsin(-np.sin(epsilon) * np.sin(theta_in))
+        return -alpha, beta, gamma, delta
 
 
 class MeasurementTable:
@@ -136,9 +168,8 @@ class MeasurementTable:
     def find_goniometer_angles(self, theta_out, phi_out, theta_p, phi_p):
 
         # create a measurement point object to store all the angles
-        p = MeasurementPoint.create_measurement_point(
-            theta_out, phi_out, theta_p, phi_p, self.halfway_parameterization
-        )
+        p = MeasurementPoint(theta_out, phi_out, theta_p, phi_p,
+                             self.halfway_parameterization)
 
         incident_vector = angle_to_cartesian(p.theta_in, p.phi_in)
         if incident_vector[2] >= 0 and np.arccos(incident_vector[2]) < np.deg2rad(self.max_angle) and p.theta_out < np.deg2rad(self.max_angle):
@@ -202,7 +233,6 @@ class MeasurementTable:
         self.output_df = self.output_df.sort_values(by=[3], ascending=False)
 
         print("Anzahl Messpunkte:", len(self.output_df))
-        print("Anzahl fehlerhafte Messpunkte:", self.number_of_invalid_points)
 
     def save_to_csv(self, save_name: Union[str, None] = None):
 
