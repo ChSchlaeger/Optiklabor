@@ -59,7 +59,6 @@ class MeasurementTable:
             self.spectrometer = "No"
             self.camera = "Yes"
 
-
         self.N_tp = N_tp
         self.N_pp = N_pp
         self.N_to = N_to
@@ -128,11 +127,12 @@ class MeasurementTable:
                 # test if the angles are correct
                 angles, index_1, index_2 = self.test_angles(theta_out, phi_out, theta_in, phi_in, alpha, beta, gamma, delta)
 
-                return output, angles, index_1, index_2
-            else:
-                return False, False, False, False
-        else:
-            return False, False, False, False
+                self.angle_list.append(angles)
+                self.output_list.append(output)
+                if index_1:
+                    self.index += 1
+                if index_2:
+                    self.index2 += 1
 
     def write_table(self):
         """write table for goniometer measurements.
@@ -153,54 +153,26 @@ class MeasurementTable:
                     if theta_p == 0:
                         # direct reflection
                         phi_p = 0
-                        output, angles, index_1, index_2 = self.find_goniometer_angles(theta_out, phi_out, theta_p, phi_p)
-                        if output is not False:
-                            self.output_list.append(output)
-                            self.angle_list.append(angles)
-                        if index_1:
-                            self.index += 1
-                        if index_2:
-                            self.index2 += 1
+                        self.find_goniometer_angles(theta_out, phi_out, theta_p, phi_p)
                     else:
                         # not direct reflexion
                         for i in range(N_pp):
                             # for i in range(int(N_pp/2+1)): # if N_phi = 10: loop over 6 because of reciprocity/isotropy
                             phi_p = 2 * i * np.pi / N_pp
-                            output, angles, index_1, index_2 = self.find_goniometer_angles(theta_out, phi_out, theta_p, phi_p)
-                            if output is not False:
-                                self.output_list.append(output)
-                                self.angle_list.append(angles)
-                            if index_1:
-                                self.index += 1
-                            if index_2:
-                                self.index2 += 1
+                            self.find_goniometer_angles(theta_out, phi_out, theta_p, phi_p)
                 else:
-                    for l in range(N_po):
-                        phi_out = l * 2 * np.pi / N_po
+                    for ll in range(N_po):
+                        phi_out = ll * 2 * np.pi / N_po
                         if theta_p == 0:
                             # direct reflection
                             phi_p = 0
-                            output, angles, index_1, index_2 = self.find_goniometer_angles(theta_out, phi_out, theta_p, phi_p)
-                            if output is not False:
-                                self.output_list.append(output)
-                                self.angle_list.append(angles)
-                            if index_1:
-                                self.index += 1
-                            if index_2:
-                                self.index2 += 1
+                            self.find_goniometer_angles(theta_out, phi_out, theta_p, phi_p)
                         else:
                             # not direct reflection
                             for i in range(N_pp):
                                 # for i in range(int(N_pp/2+1)): # if N_phi = 10: loop over 6 because of reciprocity/isotropy
                                 phi_p = 2 * i * np.pi / N_pp
-                                output, angles, index_1, index_2 = self.find_goniometer_angles(theta_out, phi_out, theta_p, phi_p)
-                                if output is not False:
-                                    self.output_list.append(output)
-                                    self.angle_list.append(angles)
-                                if index_1:
-                                    self.index += 1
-                                if index_2:
-                                    self.index2 += 1
+                                self.find_goniometer_angles(theta_out, phi_out, theta_p, phi_p)
 
         # write output_list into a DataFrame
         self.output_df = pd.DataFrame(self.output_list)
