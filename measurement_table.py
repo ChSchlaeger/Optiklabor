@@ -45,10 +45,10 @@ Output:
 
 
 class MeasurementTable:
-    def __init__(self, parameterization, cam_or_spectro, spotsize, divergence,
-                 N_tp, N_pp, N_to, N_po, max_grad,
+    def __init__(self, halfway_parameterization, cam_or_spectro, spotsize, divergence,
+                 N_tp, N_pp, N_to, N_po, max_angle,
                  change_gamma, detector_spotsize, light_source_spotsize):
-        self.parameterization = parameterization
+        self.halfway_parameterization = halfway_parameterization
         self.spotsize = spotsize
         self.divergence = divergence
 
@@ -63,7 +63,7 @@ class MeasurementTable:
         self.N_pp = N_pp
         self.N_to = N_to
         self.N_po = N_po
-        self.max_grad = max_grad
+        self.max_angle = max_angle
         self.change_gamma = change_gamma
         self.detector_spotsize = detector_spotsize
         self.light_source_spotsize = light_source_spotsize
@@ -75,28 +75,28 @@ class MeasurementTable:
         self.index2 = 0
 
     @staticmethod
-    def test_angles(th_o, ph_o, th_i, ph_i, a, b, c, d):
+    def test_angles(theta_out, phi_in, alpha, beta, gamma, delta):
 
-        a, b, c, d = [x * np.pi / 180 for x in [a, b, c, d]]
-        th_o_2, ph_o_2, th_i_2, ph_i_2 = goniometer_to_angle(a, b, c, d)
-        angles = np.array([th_o_2, ph_o_2, th_i_2, ph_i_2]) * 180 / np.pi
+        alpha, beta, gamma, delta = [x * np.pi / 180 for x in [alpha, beta, gamma, delta]]
+        theta_out_2, phi_out_2, theta_in_2, phi_in_2 = goniometer_to_angle(alpha, beta, gamma, delta)
+        angles = np.array([theta_out_2, phi_out_2, theta_in_2, phi_in_2]) * 180 / np.pi
 
-        diff = (ph_i_2 - ph_o_2) * 180 / np.pi
+        diff = (phi_in_2 - phi_out_2) * 180 / np.pi
         if diff > 180:
             diff = diff - 360
         elif diff < -180:
             diff = diff + 360
 
-        if light_source_spotsize / np.cos(b) > detector_spotsize / np.cos(d - b):
+        if light_source_spotsize / np.cos(beta) > detector_spotsize / np.cos(delta - beta):
             index_2 = True
         else:
             index_2 = False
 
-        if th_o < 1e-5:
-            cond3 = (abs(ph_i_2 * 180 / np.pi) - abs(ph_i * 180 / np.pi)) % 180 < 1e-5 or (
-                    abs(ph_i_2 * 180 / np.pi) - abs(ph_i * 180 / np.pi)) % 180 - 180 < 1e-5
+        if theta_out < 1e-5:
+            cond3 = (abs(phi_in_2 * 180 / np.pi) - abs(phi_in * 180 / np.pi)) % 180 < 1e-5 or (
+                    abs(phi_in_2 * 180 / np.pi) - abs(phi_in * 180 / np.pi)) % 180 - 180 < 1e-5
         else:
-            cond3 = abs((abs(diff) - abs(ph_i * 180 / np.pi))) < 1e-5
+            cond3 = abs((abs(diff) - abs(phi_in * 180 / np.pi))) < 1e-5
         if not cond3:
             index_1 = True
         else:
@@ -105,27 +105,30 @@ class MeasurementTable:
         return angles, index_1, index_2
 
     def find_goniometer_angles(self, theta_out, phi_out, theta_p, phi_p, rounding=1):
-        if self.parameterization == 1:
-            theta_in, phi_in = find_incident_coord(theta_out, phi_out, theta_p, phi_p)
+
+        # if halfway parameterization is used, find the incident angles
+        # otherwise, phi_p and theta_p are the incident angles
+        if self.halfway_parameterization:
+            theta_in, phi_in = find_incident_angles(theta_out, phi_out, theta_p, phi_p)
         else:
             theta_in, phi_in = theta_p, phi_p
+
         in_vector = angle_to_cartesian(theta_in, phi_in)
-        if in_vector[2] >= 0 and np.arccos(in_vector[2]) < max_grad / 180 * np.pi and theta_out < max_grad / 180 * np.pi:
+        if in_vector[2] >= 0 and np.arccos(in_vector[2]) < self.max_angle / 180 * np.pi and theta_out < self.max_angle / 180 * np.pi:
             alpha, beta, gamma, delta = angle_to_goniometer(theta_out, phi_out, theta_in, phi_in)
             if abs(delta * 180 / np.pi) > 8:
                 alpha = round(alpha * 180 / np.pi, rounding)
                 beta = round(beta * 180 / np.pi, rounding)
                 gamma = round(gamma * 180 / np.pi, rounding)
-                if change_gamma:
-                    if gamma < -90:
-                        gamma = gamma + 360
+                if change_gamma and gamma < -90:
+                    gamma = gamma + 360
                 delta = round(delta * 180 / np.pi, rounding)
 
                 # this is one line in the csv
                 output = [beta, alpha, gamma, delta, 0, self.spectrometer, self.camera, self.spotsize, self.divergence]
 
                 # test if the angles are correct
-                angles, index_1, index_2 = self.test_angles(theta_out, phi_out, theta_in, phi_in, alpha, beta, gamma, delta)
+                angles, index_1, index_2 = self.test_angles(theta_out, phi_in, alpha, beta, gamma, delta)
 
                 self.angle_list.append(angles)
                 self.output_list.append(output)
@@ -191,7 +194,7 @@ class MeasurementTable:
         if save_name is None:
             save_name = ("BRDF_measurement_total_"
                          + str(self.N_tp) + str(self.N_pp) + str(self.N_to)
-                         + str(self.N_po) + "param" + str(self.parameterization))
+                         + str(self.N_po) + "param" + str(self.halfway_parameterization))
             if self.change_gamma:
                 save_name += "_gamma-plus-360"
 
@@ -255,7 +258,7 @@ if __name__ == "__main__":
     divergence = 5
     N_tp, N_pp = 24, 16  # 12, 16 #24, 16 #20,12
     N_to, N_po = 10, 1  # 12, 16#8, 1#10, 1#1, 12#10, 1 #16,1
-    max_grad = 75
+    max_angle = 75
     change_gamma = True
     detector_spotsize = 20
     light_source_spotsize = 5.5
@@ -263,7 +266,7 @@ if __name__ == "__main__":
     measurement_table = MeasurementTable(parameterization, cam_or_spectro,
                                          spotsize, divergence,
                                          N_tp, N_pp, N_to, N_po,
-                                         max_grad, change_gamma,
+                                         max_angle, change_gamma,
                                          detector_spotsize,
                                          light_source_spotsize)
 

@@ -17,7 +17,7 @@ def cartesian_to_angle(r):
     return theta, phi
 
 
-def find_incident_coord(theta_out, phi_out, theta_half, phi_half):
+def find_incident_angles(theta_out, phi_out, theta_half, phi_half):
     """calculate angles of incident direction for given outgoing angles and halfway angles"""
     half_vector = angle_to_cartesian(theta_half, phi_half)
     out_vector = angle_to_cartesian(theta_out, phi_out)
