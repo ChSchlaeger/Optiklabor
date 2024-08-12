@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="a2196d84-7086-4620-bb55-7f44e98590ab" name="Changes" comment="refactoring of measurement_table.py - changed some variable names">
+      <change afterPath="$PROJECT_DIR$/measurement_procedures/test.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/measurement_table.py" beforeDir="false" afterPath="$PROJECT_DIR$/measurement_table.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4
+}</component>
+  <component name="ProjectId" id="2jy6HfI4cUKXsJmybZy76FsTnH3" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+    <option name="showScratchesAndConsoles" value="false" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
+    &quot;Python.measurement_table.executor&quot;: &quot;Run&quot;,
+    &quot;Python.optiklabor.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test2.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/schla/PycharmProjects/Optiklabor&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
+    &quot;two.files.diff.last.used.file&quot;: &quot;C:/Users/schla/PycharmProjects/Optiklabor/measurement_procedures/test.py&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\schla\PycharmProjects\Optiklabor" />
+      <recent name="C:\Users\schla\PycharmProjects\Optiklabor\measurement_procedures" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\schla\PycharmProjects\Optiklabor" />
+      <recent name="C:\Users\schla\PycharmProjects\Optiklabor\measurement_procedures" />
+      <recent name="C:\Users\schla\PycharmProjects\Optiklabor\t#\tt" />
+      <recent name="C:\Users\schla\PycharmProjects\Optiklabor\t#" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Python.measurement_table">
+    <configuration name="compare_csv_files" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Optiklabor" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/measurement_procedures" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="C:\Users\schla\PycharmProjects\Optiklabor\measurement_procedures\compare_csv_files.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="compare_csv_files_rows" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Optiklabor" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/measurement_procedures" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="C:\Users\schla\PycharmProjects\Optiklabor\measurement_procedures\compare_csv_files_rows.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="measurement_table" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Optiklabor" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/measurement_table.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="optiklabor" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Optiklabor" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/optiklabor.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.measurement_table" />
+        <item itemvalue="Python.compare_csv_files_rows" />
+        <item itemvalue="Python.compare_csv_files" />
+        <item itemvalue="Python.optiklabor" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-48aec45f0201-746f403e7f0c-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-241.17011.127" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="a2196d84-7086-4620-bb55-7f44e98590ab" name="Changes" comment="" />
+      <created>1722346882682</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1722346882682</updated>
+    </task>
+    <task id="LOCAL-00001" summary="some changes to variable names and comments to make it more readable">
+      <option name="closed" value="true" />
+      <created>1722347590974</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1722347590974</updated>
+    </task>
+    <task id="LOCAL-00002" summary="added script by Jan Pfau to create a measurement table">
+      <option name="closed" value="true" />
+      <created>1722348432047</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1722348432047</updated>
+    </task>
+    <task id="LOCAL-00003" summary="added h5py to setup">
+      <option name="closed" value="true" />
+      <created>1722348480448</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1722348480448</updated>
+    </task>
+    <task id="LOCAL-00004" summary="added other files from Jan to the project">
+      <option name="closed" value="true" />
+      <created>1722350193453</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1722350193453</updated>
+    </task>
+    <task id="LOCAL-00005" summary="created measurement procedures folder to store measurement tables">
+      <option name="closed" value="true" />
+      <created>1722352495547</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1722352495547</updated>
+    </task>
+    <task id="LOCAL-00006" summary="started reformatting measurement_table file">
+      <option name="closed" value="true" />
+      <created>1722352521306</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1722352521306</updated>
+    </task>
+    <task id="LOCAL-00007" summary="started reformatting measurement_table file">
+      <option name="closed" value="true" />
+      <created>1722352610048</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1722352610048</updated>
+    </task>
+    <task id="LOCAL-00008" summary="started reformatting measurement_table file">
+      <option name="closed" value="true" />
+      <created>1723112744225</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1723112744225</updated>
+    </task>
+    <task id="LOCAL-00009" summary="started reformatting measurement_table file">
+      <option name="closed" value="true" />
+      <created>1723125394323</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1723125394323</updated>
+    </task>
+    <task id="LOCAL-00010" summary="added scripts to compare measurement tables, file &quot;correct_table.csv&quot; is identical to the last measurement table from Jan (24.11.). Only difference is that some rows in the csv changed places">
+      <option name="closed" value="true" />
+      <created>1723197542563</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1723197542563</updated>
+    </task>
+    <task id="LOCAL-00011" summary="refactoring of measurement_table.py">
+      <option name="closed" value="true" />
+      <created>1723197583632</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1723197583632</updated>
+    </task>
+    <task id="LOCAL-00012" summary="refactoring of measurement_table.py - deleted some unused code">
+      <option name="closed" value="true" />
+      <created>1723198379993</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1723198379993</updated>
+    </task>
+    <task id="LOCAL-00013" summary="refactoring of measurement_table.py - rewrote the file as a class">
+      <option name="closed" value="true" />
+      <created>1723444206356</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1723444206356</updated>
+    </task>
+    <task id="LOCAL-00014" summary="refactoring of measurement_table.py - cut duplicate parts from write_table()">
+      <option name="closed" value="true" />
+      <created>1723444941925</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1723444941925</updated>
+    </task>
+    <task id="LOCAL-00015" summary="refactoring of measurement_table.py - changed some variable names">
+      <option name="closed" value="true" />
+      <created>1723450675137</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1723450675137</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
+    <MESSAGE value="some changes to variable names and comments to make it more readable" />
+    <MESSAGE value="added script by Jan Pfau to create a measurement table" />
+    <MESSAGE value="added h5py to setup" />
+    <MESSAGE value="added other files from Jan to the project" />
+    <MESSAGE value="created measurement procedures folder to store measurement tables" />
+    <MESSAGE value="started reformatting measurement_table file" />
+    <MESSAGE value="added scripts to compare measurement tables, file &quot;correct_table.csv&quot; is identical to the last measurement table from Jan (24.11.). Only difference is that some rows in the csv changed places" />
+    <MESSAGE value="refactoring of measurement_table.py" />
+    <MESSAGE value="refactoring of measurement_table.py - deleted some unused code" />
+    <MESSAGE value="refactoring of measurement_table.py - rewrote the file as a class" />
+    <MESSAGE value="refactoring of measurement_table.py - cut duplicate parts from write_table()" />
+    <MESSAGE value="refactoring of measurement_table.py - changed some variable names" />
+    <option name="LAST_COMMIT_MESSAGE" value="refactoring of measurement_table.py - changed some variable names" />
+  </component>
+</project>

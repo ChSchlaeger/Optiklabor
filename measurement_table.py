@@ -44,6 +44,67 @@ Output:
 """
 
 
+class MeasurementPoint:
+    def __init__(self):
+
+        # incident and outgoing angles in degrees
+        self.theta_out = None
+        self.theta_in = None
+        self.phi_out = None
+        self.phi_in = None
+
+        # incident and outgoing angles in radians
+        self.theta_out_deg = None
+        self.theta_in_deg = None
+        self.phi_out_deg = None
+        self.phi_in_deg = None
+
+        # goniometer angles in degrees
+        self.alpha = None
+        self.beta = None
+        self.gamma = None
+        self.delta = None
+
+        # goniometer angles in radians
+        self.alpha_deg = None
+        self.beta_deg = None
+        self.gamma_deg = None
+        self.delta_deg = None
+
+    @classmethod
+    def create_measurement_point(cls, theta_out, phi_out, theta_p, phi_p, halfway_parameterization, rounding=1):
+
+        p = cls()
+
+        p.theta_out = theta_out
+        p.phi_out = phi_out
+
+        # if halfway parameterization is used, find the incident angles
+        # otherwise, phi_p and theta_p are the incident angles
+        if halfway_parameterization:
+            p.theta_in, p.phi_in = find_incident_angles(theta_out, phi_out, theta_p, phi_p)
+        else:
+            p.theta_in, p.phi_in = theta_p, phi_p
+
+        # convert to radians
+        p.theta_out_deg = np.rad2deg(p.theta_out)
+        p.theta_in_deg = np.rad2deg(p.theta_in)
+        p.phi_out_deg = np.rad2deg(p.phi_out)
+        p.phi_in_deg = np.rad2deg(p.phi_in)
+
+        # calculate goniometer angles
+        p.alpha, p.beta, p.gamma, p.delta = angle_to_goniometer(p.theta_out, p.phi_out,
+                                                                p.theta_in, p.phi_in)
+
+        # convert to radians
+        p.alpha_deg = round(np.rad2deg(p.alpha), rounding)
+        p.beta_deg = round(np.rad2deg(p.beta), rounding)
+        p.gamma_deg = round(np.rad2deg(p.gamma), rounding)
+        p.delta_deg = round(np.rad2deg(p.delta), rounding)
+
+        return p
+
+
 class MeasurementTable:
     def __init__(self, halfway_parameterization, cam_or_spectro, spotsize, divergence,
                  N_tp, N_pp, N_to, N_po, max_angle,
@@ -106,29 +167,24 @@ class MeasurementTable:
 
     def find_goniometer_angles(self, theta_out, phi_out, theta_p, phi_p, rounding=1):
 
-        # if halfway parameterization is used, find the incident angles
-        # otherwise, phi_p and theta_p are the incident angles
-        if self.halfway_parameterization:
-            theta_in, phi_in = find_incident_angles(theta_out, phi_out, theta_p, phi_p)
-        else:
-            theta_in, phi_in = theta_p, phi_p
+        # create a measurement point object to store all the angles
+        p = MeasurementPoint.create_measurement_point(
+            theta_out, phi_out, theta_p, phi_p, self.halfway_parameterization
+        )
 
-        in_vector = angle_to_cartesian(theta_in, phi_in)
-        if in_vector[2] >= 0 and np.arccos(in_vector[2]) < self.max_angle / 180 * np.pi and theta_out < self.max_angle / 180 * np.pi:
-            alpha, beta, gamma, delta = angle_to_goniometer(theta_out, phi_out, theta_in, phi_in)
-            if abs(delta * 180 / np.pi) > 8:
-                alpha = round(alpha * 180 / np.pi, rounding)
-                beta = round(beta * 180 / np.pi, rounding)
-                gamma = round(gamma * 180 / np.pi, rounding)
-                if change_gamma and gamma < -90:
-                    gamma = gamma + 360
-                delta = round(delta * 180 / np.pi, rounding)
+        in_vector = angle_to_cartesian(p.theta_in, p.phi_in)
+        if in_vector[2] >= 0 and np.arccos(in_vector[2]) < np.deg2rad(self.max_angle) and p.theta_out < np.deg2rad(self.max_angle):
+
+            if abs(p.delta_deg) > 8:
+                if change_gamma and p.gamma_deg < -90:
+                    p.gamma_deg = p.gamma_deg + 360
 
                 # this is one line in the csv
-                output = [beta, alpha, gamma, delta, 0, self.spectrometer, self.camera, self.spotsize, self.divergence]
+                output = [p.beta_deg, p.alpha_deg, p.gamma_deg, p.delta_deg, 0, self.spectrometer,
+                          self.camera, self.spotsize, self.divergence]
 
                 # test if the angles are correct
-                angles, index_1, index_2 = self.test_angles(theta_out, phi_in, alpha, beta, gamma, delta)
+                angles, index_1, index_2 = self.test_angles(p.theta_out, p.phi_in, p.alpha_deg, p.beta_deg, p.gamma_deg, p.delta_deg)
 
                 self.angle_list.append(angles)
                 self.output_list.append(output)
