@@ -132,7 +132,6 @@ class MeasurementTable:
         self.output_list = []
         self.angle_list = []
         self.output_df = None
-        self.number_of_invalid_points = 0
 
     def find_goniometer_angles(self, theta_out, phi_out, theta_p, phi_p):
 
@@ -141,27 +140,22 @@ class MeasurementTable:
             theta_out, phi_out, theta_p, phi_p, self.halfway_parameterization
         )
 
-        in_vector = angle_to_cartesian(p.theta_in, p.phi_in)
-        if in_vector[2] >= 0 and np.arccos(in_vector[2]) < np.deg2rad(self.max_angle) and p.theta_out < np.deg2rad(self.max_angle):
+        incident_vector = angle_to_cartesian(p.theta_in, p.phi_in)
+        if incident_vector[2] >= 0 and np.arccos(incident_vector[2]) < np.deg2rad(self.max_angle) and p.theta_out < np.deg2rad(self.max_angle):
 
             if abs(p.delta_deg) > 8:
                 if self.change_gamma and p.gamma_deg < -90:
                     p.gamma_deg = p.gamma_deg + 360
 
-                # this is one line in the csv
-                output = [p.beta_deg, p.alpha_deg, p.gamma_deg, p.delta_deg, 0, self.spectrometer,
-                          self.camera, self.spotsize, self.divergence]
-
                 # check if detector spotsize is large enough for the incident beam
                 if self.light_source_spotsize / np.cos(p.beta) > self.detector_spotsize / np.cos(p.delta - p.beta):
-                    invalid_angle = True
-                else:
-                    invalid_angle = False
+                    raise ValueError("Detector spotsize is too small for incident beam.")
 
+                # append to the lists
+                output = [p.beta_deg, p.alpha_deg, p.gamma_deg, p.delta_deg, 0, self.spectrometer,
+                          self.camera, self.spotsize, self.divergence]
                 self.angle_list.append([p.alpha, p.beta, p.gamma, p.delta])
                 self.output_list.append(output)
-                if invalid_angle:
-                    self.number_of_invalid_points += 1
 
     def write_table(self):
         """write table for goniometer measurements.
