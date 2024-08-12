@@ -165,7 +165,7 @@ class MeasurementTable:
 
         return angles, index_1, index_2
 
-    def find_goniometer_angles(self, theta_out, phi_out, theta_p, phi_p, rounding=1):
+    def find_goniometer_angles(self, theta_out, phi_out, theta_p, phi_p):
 
         # create a measurement point object to store all the angles
         p = MeasurementPoint.create_measurement_point(
@@ -176,7 +176,7 @@ class MeasurementTable:
         if in_vector[2] >= 0 and np.arccos(in_vector[2]) < np.deg2rad(self.max_angle) and p.theta_out < np.deg2rad(self.max_angle):
 
             if abs(p.delta_deg) > 8:
-                if change_gamma and p.gamma_deg < -90:
+                if self.change_gamma and p.gamma_deg < -90:
                     p.gamma_deg = p.gamma_deg + 360
 
                 # this is one line in the csv
@@ -197,17 +197,17 @@ class MeasurementTable:
         """write table for goniometer measurements.
         to make the measurement faster, sort the table by delta (4th column)"""
 
-        for k in range(N_to):
-            if N_to == 1:
+        for k in range(self.N_to):
+            if self.N_to == 1:
                 theta_out = np.pi / 4
             else:
-                theta_out = k * np.pi / 2 / N_to
-            for j in range(N_tp):
-                if N_tp == 1:
+                theta_out = k * np.pi / 2 / self.N_to
+            for j in range(self.N_tp):
+                if self.N_tp == 1:
                     theta_p = np.pi / 4
                 else:
-                    theta_p = j * np.pi / 2 / N_tp
-                if theta_out == 0 or N_po == 1:
+                    theta_p = j * np.pi / 2 / self.N_tp
+                if theta_out == 0 or self.N_po == 1:
                     phi_out = np.pi
                     if theta_p == 0:
                         # direct reflection
@@ -215,22 +215,22 @@ class MeasurementTable:
                         self.find_goniometer_angles(theta_out, phi_out, theta_p, phi_p)
                     else:
                         # not direct reflexion
-                        for i in range(N_pp):
+                        for i in range(self.N_pp):
                             # for i in range(int(N_pp/2+1)): # if N_phi = 10: loop over 6 because of reciprocity/isotropy
-                            phi_p = 2 * i * np.pi / N_pp
+                            phi_p = 2 * i * np.pi / self.N_pp
                             self.find_goniometer_angles(theta_out, phi_out, theta_p, phi_p)
                 else:
-                    for ll in range(N_po):
-                        phi_out = ll * 2 * np.pi / N_po
+                    for ll in range(self.N_po):
+                        phi_out = ll * 2 * np.pi / self.N_po
                         if theta_p == 0:
                             # direct reflection
                             phi_p = 0
                             self.find_goniometer_angles(theta_out, phi_out, theta_p, phi_p)
                         else:
                             # not direct reflection
-                            for i in range(N_pp):
+                            for i in range(self.N_pp):
                                 # for i in range(int(N_pp/2+1)): # if N_phi = 10: loop over 6 because of reciprocity/isotropy
-                                phi_p = 2 * i * np.pi / N_pp
+                                phi_p = 2 * i * np.pi / self.N_pp
                                 self.find_goniometer_angles(theta_out, phi_out, theta_p, phi_p)
 
         # write output_list into a DataFrame
@@ -308,23 +308,17 @@ class MeasurementTable:
 
 if __name__ == "__main__":
 
-    parameterization = 1  # 0: omega_i, 1: omega_h
-    cam_or_spectro = 1  # 0: camera, 1: spectrometer
-    spotsize = 1
-    divergence = 5
-    N_tp, N_pp = 24, 16  # 12, 16 #24, 16 #20,12
-    N_to, N_po = 10, 1  # 12, 16#8, 1#10, 1#1, 12#10, 1 #16,1
-    max_angle = 75
-    change_gamma = True
-    detector_spotsize = 20
-    light_source_spotsize = 5.5
-
-    measurement_table = MeasurementTable(parameterization, cam_or_spectro,
-                                         spotsize, divergence,
-                                         N_tp, N_pp, N_to, N_po,
-                                         max_angle, change_gamma,
-                                         detector_spotsize,
-                                         light_source_spotsize)
+    measurement_table = MeasurementTable(
+        halfway_parameterization=1,  # 0: omega_i, 1: omega_h
+        cam_or_spectro=1,            # 0: camera, 1: spectrometer
+        spotsize=1,
+        divergence=5,
+        N_tp=24, N_pp=16,            # 12, 16 #24, 16 #20,12
+        N_to=10, N_po=1,             # 12, 16#8, 1#10, 1#1, 12#10, 1 #16,1
+        max_angle=75,
+        change_gamma=True,
+        detector_spotsize=20,
+        light_source_spotsize=5.5)
 
     measurement_table.write_table()
     measurement_table.save_to_csv("test")
