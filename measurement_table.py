@@ -260,7 +260,15 @@ class MeasurementTable:
             index=False, header=False
         )
 
-    def create_plots(self, theta_out_plot=45., phi_out_plot=180.):
+    def create_plots(self, theta_out_plot: float = 45.,
+                     phi_out_plot: float = 180.):
+        """
+        Creates 2D and 3D plots of the measurement points on a sphere based
+        on filtered angles.
+
+        :param theta_out_plot: Target theta_out angle for filtering.
+        :param phi_out_plot: Target phi_out angle for filtering.
+        """
 
         # check if angle_list is filled
         if not self.angle_list:
@@ -273,39 +281,38 @@ class MeasurementTable:
         indices_phi_out = [index for index, values in enumerate(remaining_angles) if abs(values[1] - phi_out_plot) < 2]
         final_angles = remaining_angles[indices_phi_out]
 
-        # create the plot
-        xyz = np.array([angle_to_cartesian(np.deg2rad(values[2]), np.deg2rad(values[3])) for values in final_angles])
-        x = np.array([xyz[i][0] for i in range(len(xyz))])
-        y = np.array([xyz[i][1] for i in range(len(xyz))])
-        circle = plt.Circle((0, 0), 1, alpha=0.2)
-        fig, ax = plt.subplots()
-        ax.scatter(x, y)
-        ax.axis('equal')
-        ax.add_patch(circle)
-        plt.show()
+        # get the plot data
+        x, y, z = np.array([angle_to_cartesian(np.deg2rad(values[2]), np.deg2rad(values[3])) for values in final_angles]).T
 
-        """
-        # this has nothing to do with the actual measurement points -> find a better representation
-        # create a sphere to see which points are measured
-        r = 1
-        pi = np.pi
-        cos = np.cos
-        sin = np.sin
-        phi, theta = np.mgrid[0.0:pi:100j, 0.0:2.0 * pi:100j]
-        x = r * sin(phi) * cos(theta)
-        y = r * sin(phi) * sin(theta)
-        z = r * cos(phi)
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        ax.plot_surface(
-            x, y, z, rstride=1, cstride=1, color='c', alpha=0.6, linewidth=0)
-        ax.scatter(x, y, z, color="k", s=20)
-        ax.set_xlim([-1, 1])
-        ax.set_ylim([-1, 1])
-        ax.set_zlim([-1, 1])
-        ax.set_aspect("auto")
-        plt.tight_layout()
-        plt.show()"""
+        # Set up subplots: 1 row, 2 columns
+        fig = plt.figure(figsize=(14, 6))
+        ax2d = fig.add_subplot(1, 2, 1)
+        ax3d = fig.add_subplot(1, 2, 2, projection='3d')
+
+        # 2D plot
+        ax2d.scatter(x, y)
+        ax2d.axis('equal')
+        ax2d.add_patch(plt.Circle((0, 0), 1, alpha=0.2))
+        ax2d.set_title("2D Plot")
+        ax2d.set_xlabel('X axis')
+        ax2d.set_ylabel('Y axis')
+
+        # 3D plot
+        ax3d.set_box_aspect([1, 1, 0.5])  # Aspect ratio is 1:1:1 (equal axes)
+        ax3d.scatter(x, y, z)
+        ax3d.axis('equal')
+        u = np.linspace(0, np.pi/2, 100)
+        v = np.linspace(0, 2 * np.pi, 100)  # Cover full azimuthal range
+        x_sphere = np.outer(np.sin(u), np.cos(v))
+        y_sphere = np.outer(np.sin(u), np.sin(v))
+        z_sphere = np.outer(np.cos(u), np.ones_like(v))
+        ax3d.plot_surface(x_sphere, y_sphere, z_sphere, color='c', alpha=0.1, rstride=5, cstride=5)
+        ax3d.set_title("3D Plot")
+        ax3d.set_xlabel('X axis')
+        ax3d.set_ylabel('Y axis')
+        ax3d.set_zlabel('Z axis')
+
+        plt.show()
 
 
 if __name__ == "__main__":
@@ -315,8 +322,8 @@ if __name__ == "__main__":
         camera_or_spectrometer="spectrometer",  # either "camera" or "spectrometer"
         spotsize=1,
         divergence=5,
-        N_tp=24, N_pp=16,            # 12, 16 #24, 16 #20,12
-        N_to=10, N_po=1,             # 12, 16#8, 1#10, 1#1, 12#10, 1 #16,1
+        N_tp=24, N_pp=16,            # 24, 16
+        N_to=20, N_po=1,             # 10,  1
         change_gamma=True,
         detector_spotsize=20,
         light_source_spotsize=5.5)
