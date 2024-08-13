@@ -192,28 +192,15 @@ class MeasurementTable:
                 if self.change_gamma and p.gamma_deg < -90:
                     p.gamma_deg = p.gamma_deg + 360
 
-                # check if detector spotsize is large enough for the incident beam
+                # skip the point if the detector spotsize is not large enough for the incident beam
                 if self.light_source_spotsize / np.cos(p.beta) > self.detector_spotsize / np.cos(p.delta - p.beta):
-                    raise ValueError("Detector spotsize is too small for incident beam.")
+                    return
 
                 # append to the lists
                 output = [p.beta_deg, p.alpha_deg, p.gamma_deg, p.delta_deg, 0, self.spectrometer,
                           self.camera, self.spotsize, self.divergence]
-                self.angle_list.append([p.alpha_deg, p.beta_deg, p.gamma_deg, p.delta_deg])
+                self.angle_list.append(np.array([p.theta_out_deg, p.phi_out_deg, p.theta_in_deg, p.phi_in_deg]))
                 self.output_list.append(output)
-
-    def _iterate_phi_p(self, theta_out: float, phi_out: float, theta_p: float):
-
-        # direct reflection -> phi_p is 0 per definition
-        if theta_p == 0:
-            phi_p = 0
-            self._calculate_goniometer_angles(theta_out, phi_out, theta_p, phi_p)
-
-        # not direct reflection -> iterate N_pp times over phi_p
-        else:
-            for i in range(self.N_pp):
-                phi_p = 2 * i * np.pi / self.N_pp
-                self._calculate_goniometer_angles(theta_out, phi_out, theta_p, phi_p)
 
     def generate(self):
         """write table for goniometer measurements. loop over all possible angles
@@ -234,16 +221,23 @@ class MeasurementTable:
                     theta_p = j * np.pi / 2 / self.N_tp
 
                 # iterate N_po times over phi_out
-                if theta_out == 0 or self.N_po == 1:
-                    phi_out = np.pi
-                    self._iterate_phi_p(theta_out, phi_out, theta_p)
-                else:
-                    for ll in range(self.N_po):
+                for ll in range(self.N_po):
+                    if theta_out == 0 or self.N_po == 1:
+                        phi_out = np.pi
+                    else:
                         phi_out = ll * 2 * np.pi / self.N_po
-                        self._iterate_phi_p(theta_out, phi_out, theta_p)
+
+                    # iterate N_pp times over phi_p
+                    for i in range(self.N_pp):
+                        if theta_p == 0:  # direct reflection -> phi_p is 0 per definition
+                            phi_p = 0
+                        else:
+                            phi_p = 2 * i * np.pi / self.N_pp  # not direct reflection
+                        self._calculate_goniometer_angles(theta_out, phi_out, theta_p, phi_p)
 
         # write output_list into a DataFrame
         self.output_df = pd.DataFrame(self.output_list)
+        self.output_df = self.output_df.drop_duplicates()
         self.output_df = self.output_df.sort_values(by=[3], ascending=False)
 
     def save_to_csv(self, save_name: Union[str, None] = None):
@@ -273,19 +267,17 @@ class MeasurementTable:
             print("No angles found.")
             return
 
-        # plot the measured points on a sphere
-        indices = [index for index, values in enumerate(self.angle_list) if abs(values[0] - theta_out_plot) < 2]
-        remaining_angles = np.array(self.angle_list)[indices]
-        print(remaining_angles)
+        # filter the measurement points by theta_out and phi_out
+        indices_theta_out = [index for index, values in enumerate(self.angle_list) if abs(values[0] - theta_out_plot) < 2]
+        remaining_angles = np.array(self.angle_list)[indices_theta_out]
+        indices_phi_out = [index for index, values in enumerate(remaining_angles) if abs(values[1] - phi_out_plot) < 2]
+        final_angles = remaining_angles[indices_phi_out]
 
-        indices_1 = [index for index, values in enumerate(remaining_angles) if abs(values[1] - phi_out_plot) < 2]
-        final_angles = remaining_angles[indices_1]
-        print(final_angles)
-
-        xyz = np.array([angle_to_cartesian(values[2] * np.pi / 180, values[3] * np.pi / 180) for values in final_angles])
+        # create the plot
+        xyz = np.array([angle_to_cartesian(np.deg2rad(values[2]), np.deg2rad(values[3])) for values in final_angles])
         x = np.array([xyz[i][0] for i in range(len(xyz))])
         y = np.array([xyz[i][1] for i in range(len(xyz))])
-        circle = plt.Circle((0, 0), 1, alpha=0.3)
+        circle = plt.Circle((0, 0), 1, alpha=0.2)
         fig, ax = plt.subplots()
         ax.scatter(x, y)
         ax.axis('equal')
