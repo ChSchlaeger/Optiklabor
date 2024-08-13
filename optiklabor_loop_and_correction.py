@@ -23,39 +23,39 @@ def main():
     # directory of the data
     # some directory names make problems. maybe with " "?
     spectral_dir = Path('Klinkerriemchen_Elabrick_rot\Messdaten')
-    
+
     # reference file
     reference_dir = '../../Desktop/BRDF Spectralon 0,45 degrees_350_bis_1040.txt'
     #reference_dir = None
-    
+
     # list of wavelengths
     file_name = "../../Desktop/am-1-5_10er-schritte.txt"
     am_1_5 = pd.read_csv(file_name, sep='\t', decimal='.', encoding='latin-1')
     wavelengths = np.array([*am_1_5["Wavelength"]])
     # alternatively use a different array wavelengths like np.array([440, 510, 645])
     #wavelengths = [600]
-    
+
     # output directory
     output_dir = Path('Klinkerriemchen_Elabrick_rot\Optiklabor')
-    
+
     # possibilities: True, False
     save_intermediate = False
-    
+
     # possibilities: 'No correction', '1/cos(entrance angle)', '1/cos(exit angle)'
     correction_factor = '1/cos(exit angle)'
-    
+
     # possibilities: 'exit', 'entrance'
     plot_angle = 'entrance'
-    
+
     for l in wavelengths:
         # in this version, filter_dir is a number
         filter_dir = int(l)
-        
+
         optiklabor = Optiklabor(
             spectral_dir, reference_dir, filter_dir, output_dir, save_intermediate,
             correction_factor, plot_angle
         )
-        optiklabor.build(filter_dir)                                           # added filter_dir
+        optiklabor.build(filter_dir)  # added filter_dir
 
 
 def in_ranges(x, b):
@@ -74,7 +74,7 @@ def in_ranges(x, b):
 
     """
     return [1 if ((x > y[0]) & (x < y[1])) else 0.5
-            if ((x >= y[0]) & (x <= y[1])) else 0 for y in b]
+    if ((x >= y[0]) & (x <= y[1])) else 0 for y in b]
 
 
 class Optiklabor:
@@ -112,7 +112,7 @@ class Optiklabor:
         self.filter_data = None
         self.output_data = None
 
-    def build(self, filter_dir):                                               # added filter_dir
+    def build(self, filter_dir):  # added filter_dir
         """Fills the Optiklabor with data by calling separate methods that
         gather sub-data themselves.
 
@@ -133,8 +133,8 @@ class Optiklabor:
             output_data = pd.concat([output_data, new_output], axis=1)
         self.output_data = output_data.sort_index(axis=1)
         self.sum_output_data()
-        self.write_output_data(filter_dir)                                     # added filter_dir
-        self.plot_output_data(filter_dir)                                      # added filter_dir
+        self.write_output_data(filter_dir)  # added filter_dir
+        self.plot_output_data(filter_dir)  # added filter_dir
 
     def read_reference_data(self):
         """Reads the reference data if a reference directory is given. Returns
@@ -162,7 +162,7 @@ class Optiklabor:
         """
         self.output_data = self.output_data.sum().unstack('Parameter')
 
-    def write_output_data(self, filter_dir):                                   # added filter_dir
+    def write_output_data(self, filter_dir):  # added filter_dir
         """Writes the output data to a csv file. Converts angles from radians
         to degrees.
 
@@ -177,12 +177,12 @@ class Optiklabor:
                 'ExitAngle']
         for col in cols:
             output_data[col] = output_data[col].apply(degrees)
-        output_file = self.output_dir / f'output_{filter_dir}.txt'             # changed name
+        output_file = self.output_dir / f'output_{filter_dir}.txt'  # changed name
         with open(output_file, 'w') as f:
             f.write(f'#CorrectionFactor={self.correction_factor}\n')
             output_data.to_csv(f, sep='\t', index=False)
 
-    def plot_output_data(self, filter_dir):                                    # added filter_dir
+    def plot_output_data(self, filter_dir):  # added filter_dir
         """Plots the output data.
 
         Returns
@@ -229,7 +229,7 @@ class Optiklabor:
             x2 = np.pi / 2 * np.cos(phi - np.pi)
             y2 = np.pi / 2 * np.sin(phi - np.pi)
             ax.plot([x1, x2], [y1, y2], [0, 0], color='grey', linewidth=1)
-        strfile = f'polar_{self.plot_angle}_{filter_dir}.png'                  # changed name
+        strfile = f'polar_{self.plot_angle}_{filter_dir}.png'  # changed name
         plt.savefig(self.output_dir / strfile, dpi=300)
         plt.show()
 
@@ -386,9 +386,9 @@ class IntermediateData:
         -------
 
         """
-        
+
         if self.correction_factor == 'No correction':
-            self.correction_angle = 0                                          #changed from 1 to 0
+            self.correction_angle = 0  #changed from 1 to 0
         alpha = radians(float(meta_data['SampleTilt']) * -1)
         beta = radians(float(meta_data['SampleAngle']))
         gamma = radians(float(meta_data['SampleRotation']))
@@ -401,7 +401,7 @@ class IntermediateData:
         elif self.correction_factor == '1/cos(exit angle)':
             self.correction_angle = self.ang_exit
         if self.correction_angle < 1e-12:
-            self.correction_angle = 0                                          #changed from 1 to 0
+            self.correction_angle = 0  #changed from 1 to 0
             self.correction_factor = 'No correction'
         # azimuths
         if self.ang_exit < 1e-12:
@@ -410,14 +410,14 @@ class IntermediateData:
             cos_azi_exit = ((cos(beta - delta) * sin(alpha) * sin(gamma)
                              - sin(beta - delta) * cos(gamma))
                             / sqrt(1 - cos(alpha) ** 2 * cos(beta - delta) ** 2))
-            
+
             if cos_azi_exit < -1:
                 self.azi_exit = np.pi
             elif cos_azi_exit > 1:
                 self.azi_exit = 0
             else:
                 self.azi_exit = acos(cos_azi_exit)
-        
+
         condition_exit = (sin(gamma) * sin(beta - delta)
                           + sin(alpha) * cos(gamma) * cos(beta - delta))
         if condition_exit < 0:
@@ -428,14 +428,14 @@ class IntermediateData:
             cos_azi_entrance = ((-sin(beta) * cos(gamma) + sin(alpha) * cos(beta)
                                  * sin(gamma))
                                 / sqrt(1 - cos(alpha) ** 2 * cos(beta) ** 2))
-            
+
             if cos_azi_entrance < -1:
                 self.azi_entrance = np.pi
             elif cos_azi_entrance > 1:
                 self.azi_entrance = 0
             else:
                 self.azi_entrance = acos(cos_azi_entrance)
-        
+
         condition_entrance = (sin(gamma) * sin(beta)
                               + sin(alpha) * cos(gamma) * cos(beta))
         if condition_entrance < 0:
@@ -474,7 +474,7 @@ class IntermediateData:
                 method='linear')
             ref_data = ref_data.reindex(spectral_data.index)
             intermediate_data = ref_data.mul(spectral_data, axis=0)
-        intermediate_data /= cos(self.correction_angle)                        # added cos
+        intermediate_data /= cos(self.correction_angle)  # added cos
         if save_intermediate:
             with open(output_file, 'w') as f:
                 # write angle data
@@ -582,8 +582,8 @@ class OutputData:
         -------
 
         """
-        self.d = {'weight': [1.0], 'lower': [filter_dir - 5], 'upper': [filter_dir + 5]} # changed
-        self.filter_data = pd.DataFrame(data=self.d, index=[filter_dir])       #changed
+        self.d = {'weight': [1.0], 'lower': [filter_dir - 5], 'upper': [filter_dir + 5]}  # changed
+        self.filter_data = pd.DataFrame(data=self.d, index=[filter_dir])  #changed
 
     def get_data(self, intermediate_data):
         """Gets the output data by filtering the intermediata data with the
