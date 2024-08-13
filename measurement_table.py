@@ -10,34 +10,6 @@ import matplotlib.pyplot as plt
 #  - add a function to estimate the measurement time for a given table
 #  - try to optimize the measurement time
 #  - add a gooey implementation to create the measurement table
-#  - add docstrings
-
-"""
-Create a table to measure the BRDF of a material. The outgoing direction is constant - the parametrisation
-direction is varying.
-Only reflection is measured -> delta is in [0...180°[
-Input:
-    -type of parametrisation (half-angle or incident angle)
-    -outgoing angles theta_o and phi_o (for isotropic set phi_o = 0 -> surface tangent points to omega_o direction)
-    -camera or spectrometer?
-    -spotsize (1 ... 6)
-    -divergence (1 ... 5)
-    -number of samples for each angle
-        - N_to
-        - N_pp
-        - N_tp
-Output:
-    - angles
-        - beta
-        - alpha
-        - gamma
-        - delta
-    - direction
-    - spectrometer bool
-    - camera bool
-    - spotsize (1 ... 6)
-    - divergence (1 ... 5)
-"""
 
 
 def cartesian_to_angle(r: Tuple[float, float, float]):
@@ -53,6 +25,12 @@ def angle_to_cartesian(theta: float, phi: float):
 
 
 class MeasurementPoint:
+    """
+    Class that represents a measurement point with all its angles. All angles
+    are calculated when an object is created. Each angle is stored in radians
+    and degrees.
+    """
+
     def __init__(self, theta_out: float, phi_out: float, theta_p: float,
                  phi_p: float, halfway_parameterization: int,
                  rounding: int = 1):
@@ -91,6 +69,8 @@ class MeasurementPoint:
         """
         Calculate goniometer parameters for given outgoing and incident angles.
         This is more or less the original implementation from Marie and Jan.
+
+        :returns: Goniometer angles alpha, beta, gamma, delta in radians
         """
 
         # calculate delta
@@ -149,36 +129,78 @@ class MeasurementPoint:
 
 
 class MeasurementTable:
-    def __init__(self, halfway_parameterization: int,
-                 camera_or_spectrometer: str,
-                 spotsize: float, divergence: int,
-                 N_tp: int, N_pp: int, N_to: int, N_po: int,
-                 change_gamma: bool, detector_spotsize: float,
-                 light_source_spotsize: float):
+    """
+    Class to create a measurement table with all measurement points.
+    The table is created based on the given parameters and can be saved to a csv file.
+
+    The csv table columns are structured as follows:
+        - beta:         in degrees
+        - alpha:        in degrees
+        - gamma:        in degrees
+        - delta:        in degrees
+        - direction:    0
+        - spectrometer: Yes/No
+        - camera:       Yes/No
+        - spotsize:     (1 ... 6)
+        - divergence:   (1 ... 5)
+    """
+
+    def __init__(self,
+                 halfway_parameterization: int,
+                 N_tp: int, N_pp: int,
+                 N_to: int, N_po: int,
+                 spotsize: float,
+                 divergence: int,
+                 detector_spotsize: float,
+                 light_source_spotsize: float,
+                 camera_or_spectrometer: str = "spectrometer",
+                 change_gamma: bool = True):
+
         self.halfway_parameterization = halfway_parameterization
+        """ Defines the type of parametrisation (half-angle or incident angle). 
+        A value of 0 corresponds to omega_in (i.e. N_tp and N_pp are theta_in and phi_in).
+        A value of 1 corresponds to omega_halfway (i.e. N_tp and N_pp are theta_h and phi_h). """
+        self.N_tp = N_tp
+        """ Number of samples for theta_in/theta_halfway """
+        self.N_pp = N_pp
+        """ Number of samples for phi_in/phi_halfway """
+        self.N_to = N_to
+        """ Number of samples for theta_out """
+        self.N_po = N_po
+        """ Number of samples for phi_out. For isotropic materials, this should be 1. """
+
         self.spotsize = spotsize
+        """ Spotsize mode of the light source. Can be set in the goniometer 
+        software and can be (1 ... 6). A value of 1 corresponds to a spotsize of 20 cm."""
         self.divergence = divergence
+        """ Divergence value of the light source. Can be set in the goniometer
+        software and can be (1 ... 5). """
+        self.detector_spotsize = detector_spotsize
+        """ Spotsize of the detector in cm """
+        self.light_source_spotsize = light_source_spotsize
+        """ Spotsize of the light source in cm """
 
         if camera_or_spectrometer == "spectrometer":
             self.spectrometer = "Yes"
+            """ This is written into the output csv. Describes the method of calibration."""
             self.camera = "No"
+            """ This is written into the output csv. Describes the method of calibration."""
         elif camera_or_spectrometer == "camera":
             self.spectrometer = "No"
             self.camera = "Yes"
         else:
             raise ValueError("camera_or_spectro must be 'spectrometer' or 'camera'")
 
-        self.N_tp = N_tp
-        self.N_pp = N_pp
-        self.N_to = N_to
-        self.N_po = N_po
         self.change_gamma = change_gamma
-        self.detector_spotsize = detector_spotsize
-        self.light_source_spotsize = light_source_spotsize
+        """ This is somehow used to correct some measurement points. Default is True. """
 
+        # attributes to store the measurement points
         self.output_list = []
+        """ List to store the measurement points. Used to create the output Dataframe. """
         self.angle_list = []
+        """ List to store the angles of the measurement points. Used for plot creation. """
         self.output_df = None
+        """ Output Dataframe that is converted into the csv output """
 
     def _calculate_measurement_point(self, theta_out: float, phi_out: float,
                                      theta_p: float, phi_p: float, max_angle: Optional[float] = 75.):
@@ -228,8 +250,12 @@ class MeasurementTable:
         self.output_list.append(output)
 
     def generate(self):
-        """write table for goniometer measurements. loop over all possible angles
-        and calculate/save the goniometer angles."""
+        """
+        Generates the measurement table for goniometer measurements. The method
+        loops over all possible angles and calls the _calculate_measurement_point
+        method to create the measurement points. Ultimately, the method creates
+        a DataFrame from the output_list and sorts it by the delta angle.
+        """
 
         # iterate N_to times over theta_out
         for k in range(self.N_to):
@@ -349,12 +375,10 @@ if __name__ == "__main__":
 
     measurement_table = MeasurementTable(
         halfway_parameterization=1,  # 0: omega_i, 1: omega_h
-        camera_or_spectrometer="spectrometer",  # either "camera" or "spectrometer"
-        spotsize=1,
-        divergence=5,
         N_tp=24, N_pp=16,            # 24, 16
         N_to=10, N_po=1,             # 10,  1
-        change_gamma=True,
+        spotsize=1,
+        divergence=5,
         detector_spotsize=20,
         light_source_spotsize=5.5)
 
