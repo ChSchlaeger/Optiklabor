@@ -7,9 +7,8 @@ import matplotlib.pyplot as plt
 
 
 # TODO:
-#  - add a function to estimate the measurement time for a given table
+#  - measure the necessary parameters to estimate the measurement time in the lab
 #  - try to optimize the measurement time
-#  - add a gooey implementation to create the measurement table
 
 
 def cartesian_to_angle(r: Tuple[float, float, float]):
@@ -370,6 +369,58 @@ class MeasurementTable:
 
         plt.show()
 
+    def estimate_measurement_duration(self):
+        """
+        Estimates and prints the measurement time for the given measurement table.
+        The estimation is based on the time per measurement point and the velocity
+        to adjust each angle.
+        """
+
+        # check if output_df is present
+        if self.output_df is None:
+            print("No measurement table found.")
+            return
+
+        # parameters for the estimation -> need to be measured in the lab
+        measurement_time_per_point = 30  # in seconds
+        velocity_alpha = 2  # in degrees per second
+        velocity_beta = 2   # in degrees per second
+        velocity_gamma = 2  # in degrees per second
+        velocity_delta = 2  # in degrees per second
+        # -> are angles adjusted at the same time or one after the other?
+
+        # starting conditions -> is this correct?
+        old_alpha = 0
+        old_beta = 0
+        old_gamma = 0
+        old_delta = 0
+        duration = 0
+
+        # iterate over all measurement points and calculate duration
+        for index, row in self.output_df.iterrows():
+            alpha = row[1]
+            beta = row[0]
+            gamma = row[2]
+            delta = row[3]
+
+            duration += measurement_time_per_point
+            duration += (abs(alpha - old_alpha) / velocity_alpha
+                         + abs(beta - old_beta) / velocity_beta
+                         + abs(gamma - old_gamma) / velocity_gamma
+                         + abs(delta - old_delta) / velocity_delta)
+
+        # calculate days, hours and minutes and print them if the unit is reached
+        duration = round(duration)
+        days = duration // (24 * 3600)
+        duration = duration % (24 * 3600)
+        hours = duration // 3600
+        duration %= 3600
+        minutes = round(duration // 60)
+
+        pure_measurement_time = len(self.output_df) * measurement_time_per_point
+        print(f"Estimated measurement time: {days} days, {hours} hours, {minutes} minutes.")
+        print(f"Share of pure measurement time: {pure_measurement_time/duration:.1f} %.")
+
 
 if __name__ == "__main__":
 
@@ -385,5 +436,6 @@ if __name__ == "__main__":
     measurement_table.generate()
     measurement_table.save_to_csv("test")
     measurement_table.create_plots()
+    measurement_table.estimate_measurement_duration()
 
-    print("Anzahl Messpunkte:", len(measurement_table.output_df))
+    print("Number of measurement points:", len(measurement_table.output_df))
