@@ -6,9 +6,11 @@ import numpy as np
 import pandas as pd
 from gooey import Gooey, GooeyParser
 
-# If calibration with spectralon:
-#   BRDF values have to be multiplied with cos(45°)=1/sqrt(2) afterward.
-
+# TODO:
+#  - add this comment:
+#       If calibration with spectralon:
+#       BRDF values have to be multiplied with cos(45°)=1/sqrt(2) afterward.
+#  - ..
 
 def main():
     """The main method that runs the program.
@@ -20,6 +22,50 @@ def main():
         correction_factor, plot_angle
     )
     optiklabor.build()
+
+def main_by_Jan():
+    """
+    The main method that runs the program.
+    Adapt paths and files here.
+    If calibration with spectralon:
+    BRDF values have to be multiplied with cos(45°)=1/sqrt(2) afterward.
+    """
+    # directory of the data
+    # some directory names make problems. maybe with " "?
+    spectral_dir = Path('Klinkerriemchen_Elabrick_rot\Messdaten')
+
+    # reference file
+    reference_dir = '../../Desktop/BRDF Spectralon 0,45 degrees_350_bis_1040.txt'
+    #reference_dir = None
+
+    # list of wavelengths
+    file_name = "../../Desktop/am-1-5_10er-schritte.txt"
+    am_1_5 = pd.read_csv(file_name, sep='\t', decimal='.', encoding='latin-1')
+    wavelengths = np.array([*am_1_5["Wavelength"]])
+    # alternatively use a different array wavelengths like np.array([440, 510, 645])
+    #wavelengths = [600]
+
+    # output directory
+    output_dir = Path('Klinkerriemchen_Elabrick_rot\Optiklabor')
+
+    # possibilities: True, False
+    save_intermediate = False
+
+    # possibilities: 'No correction', '1/cos(entrance angle)', '1/cos(exit angle)'
+    correction_factor = '1/cos(exit angle)'
+
+    # possibilities: 'exit', 'entrance'
+    plot_angle = 'entrance'
+
+    for l in wavelengths:
+        # in this version, filter_dir is a number
+        filter_dir = int(l)
+
+        optiklabor = Optiklabor(
+            spectral_dir, reference_dir, filter_dir, output_dir, save_intermediate,
+            correction_factor, plot_angle
+        )
+        optiklabor.build(filter_dir)  # added filter_dir
 
 
 @Gooey(
@@ -446,9 +492,9 @@ class IntermediateData:
         -------
 
         """
-        
+
         if self.correction_factor == 'No correction':
-            self.correction_angle = 0  # change from 1 to zero
+            self.correction_angle = 0  # Jan changed this from 1 to 0
         alpha = radians(float(meta_data['SampleTilt']) * -1)
         beta = radians(float(meta_data['SampleAngle']))
         gamma = radians(float(meta_data['SampleRotation']))
@@ -461,7 +507,7 @@ class IntermediateData:
         elif self.correction_factor == '1/cos(exit angle)':
             self.correction_angle = self.ang_exit
         if self.correction_angle < 1e-12:
-            self.correction_angle = 0  # change from 1 to zero
+            self.correction_angle = 0  # Jan changed this from 1 to 0
             self.correction_factor = 'No correction'
         # azimuths
         if self.ang_exit < 1e-12:
@@ -470,14 +516,14 @@ class IntermediateData:
             cos_azi_exit = ((cos(beta - delta) * sin(alpha) * sin(gamma)
                              - sin(beta - delta) * cos(gamma))
                             / sqrt(1 - cos(alpha) ** 2 * cos(beta - delta) ** 2))
-            
+
             if cos_azi_exit < -1:
                 self.azi_exit = np.pi
             elif cos_azi_exit > 1:
                 self.azi_exit = 0
             else:
                 self.azi_exit = acos(cos_azi_exit)
-        
+
         condition_exit = (sin(gamma) * sin(beta - delta)
                           + sin(alpha) * cos(gamma) * cos(beta - delta))
         if condition_exit < 0:
@@ -488,14 +534,14 @@ class IntermediateData:
             cos_azi_entrance = ((-sin(beta) * cos(gamma) + sin(alpha) * cos(beta)
                                  * sin(gamma))
                                 / sqrt(1 - cos(alpha) ** 2 * cos(beta) ** 2))
-            
+
             if cos_azi_entrance < -1:
                 self.azi_entrance = np.pi
             elif cos_azi_entrance > 1:
                 self.azi_entrance = 0
             else:
                 self.azi_entrance = acos(cos_azi_entrance)
-        
+
         condition_entrance = (sin(gamma) * sin(beta)
                               + sin(alpha) * cos(gamma) * cos(beta))
         if condition_entrance < 0:
@@ -646,6 +692,10 @@ class OutputData:
         self.filter_data = pd.read_csv(
             filter_dir, sep='\t', header=None, index_col=0, decimal=',')
         self.filter_data.columns = ['weight', 'lower', 'upper']
+
+        # TODO: this is from Jan
+        # self.d = {'weight': [1.0], 'lower': [filter_dir - 5], 'upper': [filter_dir + 5]}  # changed
+        # self.filter_data = pd.DataFrame(data=self.d, index=[filter_dir])  # changed
 
     def get_data(self, intermediate_data):
         """Gets the output data by filtering the intermediata data with the
