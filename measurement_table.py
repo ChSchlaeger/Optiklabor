@@ -1,5 +1,5 @@
 import os
-from typing import Union, Tuple
+from typing import Union, Tuple, Optional
 
 import pandas as pd
 import numpy as np
@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 
 
 # TODO:
-#  - ein bisschen testen, Plots fixen
 #  - add a function to estimate the measurement time for a given table
 #  - try to optimize the measurement time
 #  - add a gooey implementation to create the measurement table
@@ -89,7 +88,10 @@ class MeasurementPoint:
         self.delta_deg = round(np.rad2deg(self.delta), rounding)
 
     def _get_goniometer_angles(self):
-        """calculate goniometer parameters for given outgoing and incident angles"""
+        """
+        Calculate goniometer parameters for given outgoing and incident angles.
+        This is more or less the original implementation from Marie and Jan.
+        """
 
         # calculate delta
         cos_d = (np.sin(self.theta_in) * np.sin(self.theta_out)
@@ -100,7 +102,7 @@ class MeasurementPoint:
         elif cos_d < -1:
             cos_d = -1
         delta = np.arccos(cos_d)
-        if delta < 28 * np.pi / 180:
+        if delta < np.deg2rad(28):
             delta = -delta
 
         # calculate epsilon
@@ -110,7 +112,7 @@ class MeasurementPoint:
             cos_e = (np.cos(self.theta_out) - np.cos(delta) * np.cos(self.theta_in)) / (np.sin(delta) * np.sin(self.theta_in))
             sin_e = (np.cos(self.phi_in) * np.cos(delta) - np.cos(self.phi_out) * np.sin(self.theta_out) * np.sin(self.theta_in) - np.cos(
                 self.theta_out) * np.cos(self.theta_in) * np.cos(self.phi_in)) / (np.sin(self.phi_in) * np.sin(delta) * np.sin(self.theta_in))
-            # + changed to -
+            # Jan changed + to -
             if cos_e > 1:
                 epsilon = 0
             elif cos_e < -1:
@@ -178,29 +180,52 @@ class MeasurementTable:
         self.angle_list = []
         self.output_df = None
 
-    def _calculate_goniometer_angles(self, theta_out: float, phi_out: float,
-                                     theta_p: float, phi_p: float, max_angle: float = 75.):
+    def _calculate_measurement_point(self, theta_out: float, phi_out: float,
+                                     theta_p: float, phi_p: float, max_angle: Optional[float] = 75.):
+        """
+        Calculate the measurement point and append it to the output list.
+        The method first creates a MeasurementPoint object with all its angles
+        and then checks if the point is valid with a few conditions the points
+        must fulfill. If the point is valid, it is appended to the output list.
+
+        :param theta_out: Outgoing theta angle in radians.
+        :param phi_out: Outgoing phi angle in radians.
+        :param theta_p: Incident or halfway theta angle in radians.
+        :param phi_p: Incident or halfway phi angle in radians.
+        :param max_angle: Maximum angle in degrees for the incident and outgoing angles.
+        """
 
         # create a MeasurementPoint object to calculate and store all the angles
         p = MeasurementPoint(theta_out, phi_out, theta_p, phi_p,
                              self.halfway_parameterization)
 
+        # limit measurement points to the upper hemisphere
         incident_vector = angle_to_cartesian(p.theta_in, p.phi_in)
-        if incident_vector[2] >= 0 and np.arccos(incident_vector[2]) < np.deg2rad(max_angle) and p.theta_out < np.deg2rad(max_angle):
+        if incident_vector[2] < 0:
+            return
 
-            if abs(p.delta_deg) > 8:
-                if self.change_gamma and p.gamma_deg < -90:
-                    p.gamma_deg = p.gamma_deg + 360
+        # skip the point if the incident angle exceeds the maximum allowed angle
+        if max_angle is not None:
+            if np.arccos(incident_vector[2]) >= np.deg2rad(max_angle) or p.theta_out >= np.deg2rad(max_angle):
+                return
 
-                # skip the point if the detector spotsize is not large enough for the incident beam
-                if self.light_source_spotsize / np.cos(p.beta) > self.detector_spotsize / np.cos(p.delta - p.beta):
-                    return
+        # skip measurement points in which the detector blocks the light source
+        if abs(p.delta_deg) < 8:
+            return
 
-                # append to the lists
-                output = [p.beta_deg, p.alpha_deg, p.gamma_deg, p.delta_deg, 0, self.spectrometer,
-                          self.camera, self.spotsize, self.divergence]
-                self.angle_list.append(np.array([p.theta_out_deg, p.phi_out_deg, p.theta_in_deg, p.phi_in_deg]))
-                self.output_list.append(output)
+        # skip the point if the detector spotsize is not large enough for the incident beam
+        if self.light_source_spotsize / np.cos(p.beta) > self.detector_spotsize / np.cos(p.delta - p.beta):
+            return
+
+        # change gamma stuff - I don't really understand this yet
+        if self.change_gamma and p.gamma_deg < -90:
+            p.gamma_deg = p.gamma_deg + 360
+
+        # append the valid measurement point to the lists
+        output = [p.beta_deg, p.alpha_deg, p.gamma_deg, p.delta_deg, 0, self.spectrometer,
+                  self.camera, self.spotsize, self.divergence]
+        self.angle_list.append(np.array([p.theta_out_deg, p.phi_out_deg, p.theta_in_deg, p.phi_in_deg]))
+        self.output_list.append(output)
 
     def generate(self):
         """write table for goniometer measurements. loop over all possible angles
@@ -232,8 +257,8 @@ class MeasurementTable:
                         if theta_p == 0:  # direct reflection -> phi_p is 0 per definition
                             phi_p = 0
                         else:
-                            phi_p = 2 * i * np.pi / self.N_pp  # not direct reflection
-                        self._calculate_goniometer_angles(theta_out, phi_out, theta_p, phi_p)
+                            phi_p = i * 2 * np.pi / self.N_pp  # not direct reflection
+                        self._calculate_measurement_point(theta_out, phi_out, theta_p, phi_p)
 
         # write output_list into a DataFrame
         self.output_df = pd.DataFrame(self.output_list)
@@ -241,6 +266,11 @@ class MeasurementTable:
         self.output_df = self.output_df.sort_values(by=[3], ascending=False)
 
     def save_to_csv(self, save_name: Union[str, None] = None):
+        """
+        Save the measurement table to a csv file.
+
+        :param save_name: Filename or path to save the table to.
+        """
 
         # create the folder if it does not exist
         if not os.path.exists("measurement_procedures"):
@@ -323,7 +353,7 @@ if __name__ == "__main__":
         spotsize=1,
         divergence=5,
         N_tp=24, N_pp=16,            # 24, 16
-        N_to=20, N_po=1,             # 10,  1
+        N_to=10, N_po=1,             # 10,  1
         change_gamma=True,
         detector_spotsize=20,
         light_source_spotsize=5.5)
