@@ -388,6 +388,7 @@ class MeasurementTable:
         velocity_gamma = 2  # in degrees per second
         velocity_delta = 2  # in degrees per second
         # -> are angles adjusted at the same time or one after the other?
+        parallel_adjustments = True
 
         # starting conditions -> is this correct?
         old_alpha = 0
@@ -404,10 +405,16 @@ class MeasurementTable:
             delta = row[3]
 
             duration += measurement_time_per_point
-            duration += (abs(alpha - old_alpha) / velocity_alpha
-                         + abs(beta - old_beta) / velocity_beta
-                         + abs(gamma - old_gamma) / velocity_gamma
-                         + abs(delta - old_delta) / velocity_delta)
+            if parallel_adjustments:
+                duration += max(abs(alpha - old_alpha) / velocity_alpha,
+                                abs(beta - old_beta) / velocity_beta,
+                                abs(gamma - old_gamma) / velocity_gamma,
+                                abs(delta - old_delta) / velocity_delta)
+            else:
+                duration += (abs(alpha - old_alpha) / velocity_alpha
+                             + abs(beta - old_beta) / velocity_beta
+                             + abs(gamma - old_gamma) / velocity_gamma
+                             + abs(delta - old_delta) / velocity_delta)
 
         # calculate days, hours and minutes and print them if the unit is reached
         duration = round(duration)
