@@ -23,14 +23,12 @@ Within your Anaconda Prompt, navigate to your Optiklabor-folder and install the 
 Run the executable script by:
 ```python optiklabor.py```
 
------
+## Files in this project
 
-## Explanation by Jan:
+- measurement_table: This module is used to create the measurement table in the form of a csv file. The file contains all the measuring points to be approached during a measurement and is required as input for the laboratory software before starting a measurement.
+- postprocessing: This module is the main module of the project. It contains the main functions to process the data from the measurements.
 
-before the BRDF measurements:
-- measurement_table: create angles for the goniophotometer
-
-after the measurements:
+## need to update those
 - optiklabor_loop_and_correction: get BRDF files for a list of wavelengths, for every wavelength one file
-- brdf_plot: plots
+- brdf_plot: plots -> need to check this
 - am-1-5_BRDF_korrigiert: average by using AM1.5 spectrum. and compute reflectance

@@ -10,6 +10,7 @@ from gooey import Gooey, GooeyParser
 #  - add this comment:
 #       If calibration with spectralon:
 #       BRDF values have to be multiplied with cos(45°)=1/sqrt(2) afterward.
+#  - change the naming theme inside this module -> weg von Optiklabor hin zu postprocessing
 
 
 def main():
